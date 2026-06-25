@@ -1,35 +1,42 @@
-"""Background worker for the Triage Agent.
+"""Background worker: an RQ consumer for the ``triage`` queue.
 
-Phase 0: a heartbeat loop that proves the container stays up and reads the same
-shared config as the API. The real agent pipeline (RAG -> sandbox repro ->
-classify -> draft PR) is wired in starting Phase 4.
+Replaces the Phase-0 heartbeat. Listens on Redis (``settings.redis_url``) and
+runs ``worker.handler.handle_triage_job`` for each job.
+
+Worker class is chosen by platform: the classic forking ``Worker`` on POSIX
+(production containers, for job isolation), and the non-forking ``SimpleWorker``
+on Windows where ``os.fork`` is unavailable (handy for local dev).
 """
 
 from __future__ import annotations
 
 import logging
-import time
+import os
+
+from redis import Redis
+from rq import Queue, SimpleWorker, Worker
 
 from shared.config import settings
+from shared.queue import QUEUE_NAME
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 logger = logging.getLogger("triage.worker")
 
-# Seconds between heartbeats. Kept short so `docker compose logs` shows life
-# quickly; real job polling replaces this loop in a later phase.
-HEARTBEAT_SECONDS = 15
-
 
 def main() -> None:
-    """Log an 'alive' line, then heartbeat forever so the container stays up."""
+    """Connect to Redis and process triage jobs until killed."""
+    connection = Redis.from_url(settings.redis_url)
+    worker_cls = Worker if hasattr(os, "fork") else SimpleWorker
+
     logger.info(
-        "Worker alive — dry_run=%s enable_live_writes=%s",
+        "Worker alive — dry_run=%s enable_live_writes=%s; listening on '%s' queue via %s",
         settings.dry_run,
         settings.enable_live_writes,
+        QUEUE_NAME,
+        worker_cls.__name__,
     )
-    while True:
-        logger.info("heartbeat — idle, waiting for jobs (Phase 0 stub)")
-        time.sleep(HEARTBEAT_SECONDS)
+    worker = worker_cls([Queue(QUEUE_NAME, connection=connection)], connection=connection)
+    worker.work(with_scheduler=False)
 
 
 if __name__ == "__main__":

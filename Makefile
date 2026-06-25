@@ -1,6 +1,6 @@
 # Convenience targets for the Triage Agent.
 # Usage: `make up`, `make test`, `make lint`, ...
-.PHONY: up down logs test lint fmt help
+.PHONY: up down logs test lint fmt demo help
 
 help:  ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -14,6 +14,9 @@ down:  ## Stop and remove containers, networks
 
 logs:  ## Follow logs from all services
 	docker compose logs -f
+
+demo:  ## Post a signed sample issues.opened webhook to the running API
+	python -m scripts.simulate_webhook
 
 test:  ## Run the test suite
 	pytest

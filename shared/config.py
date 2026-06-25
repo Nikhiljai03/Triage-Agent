@@ -58,6 +58,9 @@ class Settings(BaseSettings):
     dry_run: bool = True  # if True, never perform live writes
     enable_live_writes: bool = False  # explicit master switch for any GitHub write
     confidence_threshold: float = 0.7  # min model confidence before auto-acting
+    # Webhook signature verification fails CLOSED: with no secret set, requests are
+    # rejected unless this dev-only flag is explicitly enabled.
+    webhook_allow_unsigned: bool = False
 
     # ----- Sandbox ---------------------------------------------------------
     sandbox_image: str = "python:3.11-slim"  # base image for the repro sandbox

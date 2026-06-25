@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Triage Agent — Runs</title>
+  <style>
+    :root {
+      --bg: #0f1117; --panel: #171a21; --line: #262b36; --text: #e6e9ef;
+      --muted: #8b93a7; --accent: #5b8cff;
+      --queued: #b08900; --running: #2f6fed; --done: #2ea043; --error: #e5534b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: var(--bg); color: var(--text);
+      font: 14px/1.5 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    }
+    header {
+      display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap;
+      padding: 18px 24px; border-bottom: 1px solid var(--line);
+    }
+    header h1 { font-size: 18px; margin: 0; }
+    header .repo { color: var(--muted); }
+    header .spacer { flex: 1; }
+    button {
+      background: var(--panel); color: var(--text); border: 1px solid var(--line);
+      border-radius: 6px; padding: 6px 12px; cursor: pointer; font-size: 13px;
+    }
+    button:hover { border-color: var(--accent); }
+    .dot { color: var(--muted); font-size: 12px; }
+    main { display: grid; grid-template-columns: 1.6fr 1fr; gap: 0; }
+    @media (max-width: 880px) { main { grid-template-columns: 1fr; } }
+    .list, .detail { padding: 16px 24px; }
+    .detail { border-left: 1px solid var(--line); min-height: 60vh; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--line); }
+    th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+    tbody tr { cursor: pointer; }
+    tbody tr:hover { background: var(--panel); }
+    tbody tr.selected { background: #1d2230; }
+    .badge {
+      display: inline-block; padding: 2px 9px; border-radius: 999px;
+      font-size: 12px; font-weight: 600; color: #fff;
+    }
+    .badge.queued { background: var(--queued); }
+    .badge.running { background: var(--running); }
+    .badge.done { background: var(--done); }
+    .badge.error { background: var(--error); }
+    .muted { color: var(--muted); }
+    .decision { max-width: 360px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    h2 { font-size: 14px; margin: 0 0 12px; }
+    .timeline { list-style: none; margin: 0; padding: 0; }
+    .timeline li { position: relative; padding: 0 0 16px 18px; border-left: 2px solid var(--line); }
+    .timeline li::before {
+      content: ""; position: absolute; left: -6px; top: 3px;
+      width: 10px; height: 10px; border-radius: 50%; background: var(--accent);
+    }
+    .timeline .name { font-weight: 600; }
+    .timeline .ts { color: var(--muted); font-size: 12px; margin-left: 8px; }
+    .timeline .detail { color: var(--muted); white-space: pre-wrap; }
+    .empty { color: var(--muted); padding: 24px 8px; }
+    code { background: #11141b; padding: 1px 5px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🩺 Triage Agent</h1>
+    <span class="repo">target: <code>{{ repo }}</code></span>
+    <span class="spacer"></span>
+    <span class="dot" id="refresh-note">auto-refresh: on</span>
+    <button id="reindex-btn" title="POST /reindex">Reindex</button>
+  </header>
+
+  <main>
+    <section class="list">
+      <table>
+        <thead>
+          <tr><th>Issue</th><th>Repo</th><th>Status</th><th>Decision</th><th>Created</th></tr>
+        </thead>
+        <tbody id="runs">
+          {% for run in runs %}
+          <tr data-run-id="{{ run.run_id }}">
+            <td>#{{ run.issue_number }}</td>
+            <td class="muted">{{ run.repo }}</td>
+            <td><span class="badge {{ run.status }}">{{ run.status }}</span></td>
+            <td class="decision">{{ run.decision or "—" }}</td>
+            <td class="muted">{{ run.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <div class="empty" id="empty" {% if runs %}style="display:none"{% endif %}>
+        No runs yet. Send one with <code>make demo</code>.
+      </div>
+    </section>
+
+    <section class="detail">
+      <h2 id="detail-title">Select a run to see its reasoning trace</h2>
+      <ul class="timeline" id="timeline"></ul>
+    </section>
+  </main>
+
+  <script>
+    const REFRESH_MS = 4000;
+    let selected = null;
+
+    const fmt = (iso) => iso ? new Date(iso).toLocaleString() : "";
+    const esc = (s) => (s ?? "").toString().replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+
+    function rowHtml(run) {
+      return `<tr data-run-id="${run.run_id}" class="${run.run_id === selected ? "selected" : ""}">
+        <td>#${run.issue_number}</td>
+        <td class="muted">${esc(run.repo)}</td>
+        <td><span class="badge ${run.status}">${run.status}</span></td>
+        <td class="decision">${esc(run.decision || "—")}</td>
+        <td class="muted">${fmt(run.created_at)}</td>
+      </tr>`;
+    }
+
+    async function refresh() {
+      try {
+        const runs = await (await fetch("/status")).json();
+        document.getElementById("empty").style.display = runs.length ? "none" : "";
+        document.getElementById("runs").innerHTML = runs.map(rowHtml).join("");
+        if (selected) showDetail(selected);  // keep the open trace fresh
+      } catch (e) { /* leave the last good render in place */ }
+    }
+
+    async function showDetail(runId) {
+      selected = runId;
+      document.querySelectorAll("#runs tr").forEach(tr =>
+        tr.classList.toggle("selected", tr.dataset.runId === runId));
+      const run = await (await fetch(`/status/${runId}`)).json();
+      document.getElementById("detail-title").innerHTML =
+        `Issue #${run.issue_number} · <span class="badge ${run.status}">${run.status}</span>`;
+      const steps = (run.steps || []).map(s => `
+        <li><span class="name">${esc(s.name)}</span><span class="ts">${fmt(s.ts)}</span>
+        <div class="detail">${esc(s.detail)}</div></li>`).join("");
+      document.getElementById("timeline").innerHTML =
+        steps || '<li class="muted">No steps recorded yet.</li>';
+    }
+
+    document.getElementById("runs").addEventListener("click", (e) => {
+      const tr = e.target.closest("tr[data-run-id]");
+      if (tr) showDetail(tr.dataset.runId);
+    });
+    document.getElementById("reindex-btn").addEventListener("click", async () => {
+      const r = await fetch("/reindex", { method: "POST" });
+      const note = document.getElementById("refresh-note");
+      note.textContent = r.ok ? "reindex started" : "reindex failed";
+      setTimeout(() => (note.textContent = "auto-refresh: on"), 3000);
+    });
+
+    setInterval(refresh, REFRESH_MS);
+  </script>
+</body>
+</html>

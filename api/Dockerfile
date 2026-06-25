@@ -12,8 +12,10 @@ WORKDIR /app
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy only what the API needs: shared config + the api package.
+# Copy what the API needs: shared code, the api package (incl. templates), and
+# rag/ (the /reindex endpoint reuses the Phase-1 ingestion pipeline).
 COPY shared ./shared
+COPY rag ./rag
 COPY api ./api
 
 EXPOSE 8000
