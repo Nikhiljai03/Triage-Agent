@@ -1,0 +1,65 @@
+"""Central configuration for the Triage Agent.
+
+This module defines a single :class:`Settings` object built on
+``pydantic-settings``. Values are loaded from environment variables (or a local
+``.env`` file) and exposed through the module-level ``settings`` singleton.
+
+IMPORTANT: nothing else in the codebase should read ``os.environ`` directly.
+Always ``from shared.config import settings`` and read attributes off it, so
+configuration has exactly one typed source of truth.
+"""
+
+from __future__ import annotations
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    """Strongly typed, environment-driven application settings.
+
+    Every variable the whole project will eventually use is declared here with
+    a sensible default, so the Phase 0 skeleton boots even without a populated
+    ``.env`` (real secrets stay blank by default and are supplied per-deploy).
+    """
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+        extra="ignore",
+    )
+
+    # ----- GitHub ----------------------------------------------------------
+    github_token: str = ""  # PAT / app token to read issues & open PRs
+    target_repo: str = "owner/repo"  # "owner/name" of the repository we triage
+    github_webhook_secret: str = ""  # shared secret to verify webhook signatures
+
+    # ----- LLM -------------------------------------------------------------
+    openai_api_key: str = ""  # API key for the LLM provider
+    llm_model: str = "gpt-4o-mini"  # default chat/completion model
+
+    # ----- RAG / embeddings ------------------------------------------------
+    embedding_backend: str = "sentence-transformers"  # "sentence-transformers" | "openai"
+    embedding_model_st: str = "BAAI/bge-small-en-v1.5"  # local sentence-transformers model
+    embedding_model_openai: str = "text-embedding-3-small"  # OpenAI embedding model
+    reranker_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"  # cross-encoder reranker
+    qdrant_url: str = "http://qdrant:6333"  # Qdrant REST endpoint
+    qdrant_collection: str = "issues"  # collection of issue embeddings
+
+    # ----- Infra -----------------------------------------------------------
+    redis_url: str = "redis://redis:6379/0"  # broker/queue for background jobs
+
+    # ----- Safety ----------------------------------------------------------
+    dry_run: bool = True  # if True, never perform live writes
+    enable_live_writes: bool = False  # explicit master switch for any GitHub write
+    confidence_threshold: float = 0.7  # min model confidence before auto-acting
+
+    # ----- Sandbox ---------------------------------------------------------
+    sandbox_image: str = "python:3.11-slim"  # base image for the repro sandbox
+    sandbox_timeout_seconds: int = 300  # hard wall-clock limit per sandbox run
+    sandbox_mem_limit: str = "512m"  # docker --memory value for the sandbox
+    sandbox_cpu_quota: float = 1.0  # fractional CPUs granted to the sandbox
+
+
+# Module-level singleton — import THIS everywhere, never re-instantiate Settings.
+settings = Settings()

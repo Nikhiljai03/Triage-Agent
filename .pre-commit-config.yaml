@@ -1,0 +1,14 @@
+# Pre-commit hooks: lint with ruff (auto-fix) then format with black.
+# Install once with `pre-commit install`; run on all files with
+# `pre-commit run --all-files`.
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.4
+    hooks:
+      - id: ruff
+        args: [--fix]
+
+  - repo: https://github.com/psf/black
+    rev: 24.10.0
+    hooks:
+      - id: black

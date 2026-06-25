@@ -1,0 +1,35 @@
+# ---------------------------------------------------------------------------
+# Phase 0 — actually installed (skeleton only).
+# ---------------------------------------------------------------------------
+fastapi>=0.115
+uvicorn[standard]>=0.34
+pydantic>=2.10
+pydantic-settings>=2.7
+
+# ---------------------------------------------------------------------------
+# Roadmap below: intentionally NOT installed yet. Uncomment per phase when the
+# corresponding logic is added, to keep the Phase 0 image small and fast.
+# ---------------------------------------------------------------------------
+
+# Phase 1 — RAG / embeddings / vector store
+# qdrant-client>=1.12
+# sentence-transformers>=3.3        # local embeddings + CrossEncoder reranker
+
+# Phase 2 — GitHub ingestion
+# PyGithub>=2.5
+# httpx>=0.28
+
+# Phase 3 — Sandbox (Dockerized bug reproduction)
+# docker>=7.1                        # Docker SDK for Python
+
+# Phase 4 — Agent orchestration
+# langgraph>=0.2
+# langchain-core>=0.3
+# openai>=1.59
+
+# Phase 5 — Queue / background processing
+# redis>=5.2
+# rq>=2.0
+
+# Phase 6 — Evaluation
+# pandas>=2.2                        # metric aggregation / reporting
