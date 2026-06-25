@@ -26,6 +26,9 @@ ENV/
 .coverage
 htmlcov/
 
+# ----- RAG embedding cache (sha256 -> vector) --------------------------------
+.cache/
+
 # ----- IDE / OS noise --------------------------------------------------------
 .idea/
 .vscode/

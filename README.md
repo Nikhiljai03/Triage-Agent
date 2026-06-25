@@ -69,6 +69,26 @@ make test                     # pytest
 make lint                     # ruff check . && black --check .
 ```
 
+### RAG ingestion (Phase 1)
+
+Index a repository's issues for duplicate detection and fix-pattern retrieval.
+The first run downloads the embedding model (`all-MiniLM-L6-v2`, ~90 MB) and the
+cross-encoder reranker; embeddings are cached on disk (`.cache/embeddings/`) so
+re-ingestion is cheap and idempotent. Set `GITHUB_TOKEN` for anything beyond
+GitHub's unauthenticated rate limit.
+
+```bash
+docker compose up -d qdrant                       # vector store only
+python -m rag.ingest --repo OWNER/REPO --limit 100
+curl http://localhost:6333/collections/issues     # points_count > 0
+```
+
+```python
+from rag.retrieve import find_similar_issues
+find_similar_issues("app crashes on startup", mode="duplicate")  # semantic dup detection
+find_similar_issues("fix the CSV export timeout", mode="fix")    # closed issues + PR diffs
+```
+
 ---
 
 ## Project status
@@ -77,8 +97,9 @@ Built in 7 phases; each adds one real capability on top of a proven skeleton.
 
 - [x] **Phase 0 — Scaffold & infra.** Two-service skeleton (FastAPI + worker),
       Qdrant + Redis, docker-compose, config, tooling. Boots with stubs.
-- [ ] **Phase 1 — RAG / duplicate detection.** Embed & index issues in Qdrant;
-      similar-issue search + reranking.
+- [x] **Phase 1 — RAG ingestion + retrieval.** GitHub fetch (issues, comments,
+      linked-PR diffs), token-aware chunking, ST/OpenAI embeddings with on-disk
+      cache, Qdrant index, cross-encoder reranking; `duplicate` + `fix` retrieval.
 - [ ] **Phase 2 — GitHub ingestion.** Webhook receiver, signature verification,
       issue fetch/normalize.
 - [ ] **Phase 3 — Sandboxed reproduction.** Reproduce bugs in resource-limited

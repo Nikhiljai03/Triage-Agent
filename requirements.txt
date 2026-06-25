@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------
-# Phase 0 — actually installed (skeleton only).
+# Phase 0 — service skeleton.
 # ---------------------------------------------------------------------------
 fastapi>=0.115
 uvicorn[standard]>=0.34
@@ -7,16 +7,30 @@ pydantic>=2.10
 pydantic-settings>=2.7
 
 # ---------------------------------------------------------------------------
-# Roadmap below: intentionally NOT installed yet. Uncomment per phase when the
-# corresponding logic is added, to keep the Phase 0 image small and fast.
+# Phase 1 — RAG ingestion + retrieval (installed, version-pinned).
+#
+# NOTE: sentence-transformers pulls in torch and is HEAVY (hundreds of MB). The
+# api/worker images still build with it, but only the ingestion CLI
+# (`python -m rag.ingest`) actually needs it at runtime. The FIRST run downloads
+# the embedding model (all-MiniLM-L6-v2, ~90 MB) and the cross-encoder reranker
+# (ms-marco-MiniLM-L-6-v2) into the HuggingFace cache (~/.cache/huggingface).
+# ---------------------------------------------------------------------------
+qdrant-client==1.18.0
+sentence-transformers==5.6.0
+tiktoken==0.13.0
+PyGithub==2.9.1
+openai==2.44.0
+
+# ---------------------------------------------------------------------------
+# Dev / test dependencies.
+# ---------------------------------------------------------------------------
+pytest==9.1.1
+
+# ---------------------------------------------------------------------------
+# Roadmap below: intentionally NOT installed yet. Uncomment per phase.
 # ---------------------------------------------------------------------------
 
-# Phase 1 — RAG / embeddings / vector store
-# qdrant-client>=1.12
-# sentence-transformers>=3.3        # local embeddings + CrossEncoder reranker
-
-# Phase 2 — GitHub ingestion
-# PyGithub>=2.5
+# Phase 2 — GitHub ingestion via webhooks
 # httpx>=0.28
 
 # Phase 3 — Sandbox (Dockerized bug reproduction)
@@ -25,7 +39,6 @@ pydantic-settings>=2.7
 # Phase 4 — Agent orchestration
 # langgraph>=0.2
 # langchain-core>=0.3
-# openai>=1.59
 
 # Phase 5 — Queue / background processing
 # redis>=5.2

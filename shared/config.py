@@ -40,11 +40,16 @@ class Settings(BaseSettings):
 
     # ----- RAG / embeddings ------------------------------------------------
     embedding_backend: str = "sentence-transformers"  # "sentence-transformers" | "openai"
-    embedding_model_st: str = "BAAI/bge-small-en-v1.5"  # local sentence-transformers model
-    embedding_model_openai: str = "text-embedding-3-small"  # OpenAI embedding model
+    embedding_model_st: str = "sentence-transformers/all-MiniLM-L6-v2"  # local ST model (dim 384)
+    embedding_model_openai: str = "text-embedding-3-small"  # OpenAI embedding model (dim 1536)
     reranker_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"  # cross-encoder reranker
     qdrant_url: str = "http://qdrant:6333"  # Qdrant REST endpoint
     qdrant_collection: str = "issues"  # collection of issue embeddings
+    # On-disk embedding cache (sha256(model+text) -> vector). Relative paths are
+    # resolved from the process CWD; first ingestion populates it.
+    embedding_cache_dir: str = ".cache/embeddings"
+    # Drop retrieval candidates below this cosine similarity in "duplicate" mode.
+    retrieval_similarity_threshold: float = 0.5
 
     # ----- Infra -----------------------------------------------------------
     redis_url: str = "redis://redis:6379/0"  # broker/queue for background jobs
