@@ -8,8 +8,11 @@ here so the rest of the pipeline doesn't have to:
 * Pagination is followed transparently.
 * ``RateLimitExceededException`` is caught: we log the reset time, sleep until
   it passes, then continue. A small polite delay is inserted between requests.
-* A linked PR (the one that closed a closed issue) is discovered via the issue
-  timeline; its per-file patches are concatenated into a diff string.
+* A linked PR (the merged PR that closed a closed issue) is found via the GraphQL
+  ``closedByPullRequestsReferences`` field — GitHub does NOT surface these
+  "linked pull request" links (closing keywords like *fixes #123*) in the REST
+  timeline — with a REST timeline heuristic as fallback. Its per-file patches are
+  concatenated into a diff string.
 
 For tests, inject a fake PyGithub client via ``GitHubClient(client=...)`` — no
 network is touched at construction time.
@@ -17,8 +20,10 @@ network is touched at construction time.
 
 from __future__ import annotations
 
+import json
 import logging
 import time
+import urllib.request
 from collections.abc import Iterator
 from datetime import UTC, datetime
 from typing import Any
@@ -43,12 +48,18 @@ class GitHubClient:
         request_delay: float = 0.1,
     ) -> None:
         self._request_delay = request_delay
+        # Token is kept for the GraphQL linked-PR lookup (the REST client can't
+        # see closing-keyword PR links — see _find_linked_pr).
+        self._token = token if token is not None else settings.github_token
         if client is not None:
             self._gh = client
         else:
-            tok = token if token is not None else settings.github_token
             # An empty token still works for public repos (at a low rate limit).
-            self._gh = Github(auth=Auth.Token(tok), per_page=100) if tok else Github(per_page=100)
+            self._gh = (
+                Github(auth=Auth.Token(self._token), per_page=100)
+                if self._token
+                else Github(per_page=100)
+            )
 
     # -- public API --------------------------------------------------------
     def fetch_issues(
@@ -87,15 +98,65 @@ class GitHubClient:
         )
 
     def _find_linked_pr(self, repository: Any, issue: Any) -> tuple[int | None, str | None]:
-        """Best-effort: find the PR that closed this issue and return (number, diff).
+        """Find the merged PR that closed this issue and return (number, diff).
 
-        Only closed issues are inspected. We walk the timeline for a
-        ``cross-referenced`` event whose source is a PR, or a ``closed`` event
-        carrying a commit that belongs to a PR. Any failure degrades gracefully
-        to ``(None, None)`` so ingestion never crashes on a single odd issue.
+        Primary source is the GraphQL ``closedByPullRequestsReferences`` field —
+        how GitHub records "linked pull requests" (closing keywords like
+        *fixes #123*); these links do NOT appear in the REST timeline. We prefer a
+        MERGED PR (it carries the actual fix). The REST timeline heuristic is a
+        fallback. Any failure degrades to ``(None, None)`` so ingestion never
+        crashes on one odd issue.
         """
         if issue.state != "closed":
             return None, None
+        pr_number = self._linked_pr_via_graphql(repository, issue.number)
+        if pr_number is None:
+            pr_number = self._linked_pr_via_timeline(repository, issue)
+        if pr_number is None:
+            return None, None
+        return pr_number, self._fetch_pr_diff(repository, pr_number)
+
+    def _linked_pr_via_graphql(self, repository: Any, issue_number: int) -> int | None:
+        """Return the number of the MERGED PR that closed the issue (GraphQL)."""
+        if not self._token:
+            return None
+        full_name = getattr(repository, "full_name", None)
+        if not full_name or "/" not in full_name:
+            return None
+        owner, name = full_name.split("/", 1)
+        query = (
+            "query($o:String!,$n:String!,$num:Int!){repository(owner:$o,name:$n){"
+            "issue(number:$num){closedByPullRequestsReferences(first:10,includeClosedPrs:true)"
+            "{nodes{number state}}}}}"
+        )
+        try:
+            data = self._graphql(query, {"o": owner, "n": name, "num": issue_number})
+        except Exception as exc:  # noqa: BLE001 — best-effort; fall back to timeline.
+            logger.debug("GraphQL linked-PR lookup failed for #%s: %s", issue_number, exc)
+            return None
+        issue_node = ((data.get("data") or {}).get("repository") or {}).get("issue") or {}
+        nodes = (issue_node.get("closedByPullRequestsReferences") or {}).get("nodes") or []
+        merged = [n for n in nodes if n.get("state") == "MERGED"]
+        return int(merged[0]["number"]) if merged else None
+
+    def _graphql(self, query: str, variables: dict[str, Any]) -> dict[str, Any]:
+        """Minimal GraphQL POST using the configured token (stdlib only)."""
+        body = json.dumps({"query": query, "variables": variables}).encode()
+        request = urllib.request.Request(
+            "https://api.github.com/graphql",
+            data=body,
+            headers={
+                "Authorization": f"Bearer {self._token}",
+                "Content-Type": "application/json",
+                "User-Agent": "triage-agent",
+            },
+            method="POST",
+        )
+        with urllib.request.urlopen(request, timeout=30) as resp:
+            return json.load(resp)
+
+    def _linked_pr_via_timeline(self, repository: Any, issue: Any) -> int | None:
+        """Fallback: scan the REST timeline for a cross-referenced PR or closing commit."""
         try:
             for event in self._paginate(issue.get_timeline()):
                 etype = getattr(event, "event", None)
@@ -106,10 +167,10 @@ class GitHubClient:
                 else:
                     continue
                 if pr_number is not None:
-                    return pr_number, self._fetch_pr_diff(repository, pr_number)
-        except Exception as exc:  # noqa: BLE001 — linked-PR detection is best-effort.
-            logger.debug("Linked-PR lookup failed for issue #%s: %s", issue.number, exc)
-        return None, None
+                    return pr_number
+        except Exception as exc:  # noqa: BLE001 — best-effort.
+            logger.debug("Timeline linked-PR lookup failed for #%s: %s", issue.number, exc)
+        return None
 
     @staticmethod
     def _pr_number_from_source(source: Any) -> int | None:
