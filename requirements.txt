@@ -29,6 +29,13 @@ rq==2.10.0
 jinja2==3.1.6
 
 # ---------------------------------------------------------------------------
+# Phase 3 — Sandbox: Docker SDK to spawn locked-down sibling containers.
+# Requires a reachable Docker daemon at runtime (Docker-out-of-Docker via the
+# host socket); the sandbox tests are skipped when no daemon is available.
+# ---------------------------------------------------------------------------
+docker==7.1.0
+
+# ---------------------------------------------------------------------------
 # Dev / test dependencies.
 # ---------------------------------------------------------------------------
 pytest==9.1.1
@@ -37,9 +44,6 @@ fakeredis==2.36.2                    # in-memory Redis for offline tests
 # ---------------------------------------------------------------------------
 # Roadmap below: intentionally NOT installed yet. Uncomment per phase.
 # ---------------------------------------------------------------------------
-
-# Phase 3 — Sandbox (Dockerized bug reproduction)
-# docker>=7.1                        # Docker SDK for Python
 
 # Phase 4 — Agent orchestration
 # langgraph>=0.2
