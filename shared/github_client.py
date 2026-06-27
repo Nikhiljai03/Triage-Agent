@@ -73,28 +73,68 @@ class GitHubClient:
 
     # -- public API --------------------------------------------------------
     def fetch_issues(
-        self, repo: str, state: str = "all", limit: int | None = None
+        self,
+        repo: str,
+        state: str = "all",
+        limit: int | None = None,
+        *,
+        labels: list[str] | None = None,
+        with_linked_pr: bool = True,
+        with_comments: bool = True,
     ) -> list[IssueRecord]:
-        """Fetch issues (excluding PRs) from ``owner/repo`` as typed records."""
+        """Fetch issues (excluding PRs) from ``owner/repo`` as typed records.
+
+        ``labels`` (read-only) filters server-side to issues carrying ALL the
+        given label names — used by the eval harness to pull priority-labelled
+        issues cheaply (one page per label) instead of scanning the whole repo.
+        ``with_linked_pr=False`` / ``with_comments=False`` skip the (expensive)
+        linked-PR/diff resolution and comment pagination when the caller only
+        needs title/body/labels (e.g. severity gold labels or a lean eval index).
+        """
         repository = self._gh.get_repo(repo)
+        kwargs: dict[str, Any] = {"state": state}
+        if labels:
+            # Resolve to Label objects so PyGithub builds the server-side filter
+            # the same way across versions (avoids passing bare strings).
+            kwargs["labels"] = [repository.get_label(name) for name in labels]
         records: list[IssueRecord] = []
-        for issue in self._paginate(repository.get_issues(state=state)):
+        for issue in self._paginate(repository.get_issues(**kwargs)):
             # GitHub returns PRs through the issues API; skip them.
             if getattr(issue, "pull_request", None) is not None:
                 continue
-            records.append(self._build_record(repository, issue))
+            records.append(
+                self._build_record(
+                    repository,
+                    issue,
+                    with_linked_pr=with_linked_pr,
+                    with_comments=with_comments,
+                )
+            )
             if limit is not None and len(records) >= limit:
                 break
         return records
 
     # -- record assembly ---------------------------------------------------
-    def _build_record(self, repository: Any, issue: Any) -> IssueRecord:
+    def _build_record(
+        self,
+        repository: Any,
+        issue: Any,
+        *,
+        with_linked_pr: bool = True,
+        with_comments: bool = True,
+    ) -> IssueRecord:
         labels = [label.name for label in issue.labels]
-        comments = [
-            IssueComment(author=(c.user.login if c.user else None), body=c.body or "")
-            for c in self._paginate(issue.get_comments())
-        ]
-        linked_pr, linked_pr_diff = self._find_linked_pr(repository, issue)
+        comments = (
+            [
+                IssueComment(author=(c.user.login if c.user else None), body=c.body or "")
+                for c in self._paginate(issue.get_comments())
+            ]
+            if with_comments
+            else []
+        )
+        linked_pr, linked_pr_diff = (
+            self._find_linked_pr(repository, issue) if with_linked_pr else (None, None)
+        )
         return IssueRecord(
             number=issue.number,
             title=issue.title or "",

@@ -130,6 +130,23 @@ class VectorStore:
         """Exact number of points currently stored."""
         return self._client.count(collection_name=self.collection, exact=True).count
 
+    def delete_issues(self, issue_ids: list[int]) -> None:
+        """Delete every point belonging to the given issue numbers.
+
+        Used by the eval harness to *hold out* chosen distinct-negative issues
+        from a freshly built index after selecting them against the full set.
+        """
+        if not issue_ids:
+            return
+        self._client.delete(
+            collection_name=self.collection,
+            points_selector=qm.FilterSelector(
+                filter=qm.Filter(
+                    must=[qm.FieldCondition(key="issue_id", match=qm.MatchAny(any=list(issue_ids)))]
+                )
+            ),
+        )
+
     @staticmethod
     def _build_filter(filters: dict[str, Any] | None) -> qm.Filter | None:
         """Build a Qdrant ``must`` filter. List values become ``MatchAny`` (OR)."""

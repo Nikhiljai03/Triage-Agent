@@ -29,6 +29,14 @@ htmlcov/
 # ----- RAG embedding cache (sha256 -> vector) --------------------------------
 .cache/
 
+# ----- Eval run artifacts (machine-specific; dataset.json + EVAL_REPORT.md are
+#       committed as the stable artifacts, everything else is regenerated) -----
+eval/results/source_issues.json
+eval/results/paraphrases.json
+eval/results/predictions.json
+eval/results/metrics.json
+eval/results/*.json.tmp
+
 # ----- IDE / OS noise --------------------------------------------------------
 .idea/
 .vscode/

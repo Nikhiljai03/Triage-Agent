@@ -1,0 +1,465 @@
+{
+  "created_at": "2026-06-27T15:19:25.795209+00:00",
+  "model": "gemini-2.5-flash-lite",
+  "dup_fix_repo": "pydantic/pydantic",
+  "severity_repo": "rust-lang/rust",
+  "severity_label_map": {
+    "P-critical": "critical",
+    "P-high": "high",
+    "P-medium": "medium",
+    "P-low": "low"
+  },
+  "eval_collection": "eval_issues",
+  "qdrant_url": "http://localhost:6333",
+  "confidence_threshold": 0.7,
+  "retrieval_similarity_threshold": 0.5,
+  "indexed_issue_ids": [
+    13136,
+    13138,
+    13148,
+    13156,
+    13159,
+    13160,
+    13161,
+    13164,
+    13167,
+    13168,
+    13169,
+    13170,
+    13173,
+    13189,
+    13192,
+    13195,
+    13215,
+    13228,
+    13236,
+    13252,
+    13257,
+    13266,
+    13272,
+    13281,
+    13287,
+    13293,
+    13294,
+    13300,
+    13310,
+    13318,
+    13321,
+    13325,
+    13327,
+    13336,
+    13341,
+    13342
+  ],
+  "counts": {
+    "total": 28,
+    "duplicate": 6,
+    "distinct": 6,
+    "severity": 8,
+    "fix_positive": 6,
+    "fix_escalate_negative": 2
+  },
+  "cases": [
+    {
+      "id": "dup-13341",
+      "kind": "duplicate",
+      "source_repo": "pydantic/pydantic",
+      "issue_id": 13341,
+      "input_text": "TITLE: API Documentation Inaccurately Displays Keyword Argument Signatures\n\nBODY:\nI've encountered a problem where the API documentation for methods is missing the `**` indicator for keyword arguments. This omission makes it very difficult to correctly understand and use the API, as the documented signatures appear to show direct parameters when they are actually part of a `**kwargs` collection.\n\nThis led to significant confusion when I was trying to call `model_construct(values={...})`. The call wasn't working, and I spent a considerable amount of time debugging before realizing that the documentation had simply removed the `**` from the method's signature. The actual source code clearly shows `values` being passed via `**kwargs`, but the docs imply it's a named parameter.\n\nThe discrepancy between the true method signatures in the source code and their representation in the documentation causes developers to make incorrect assumptions and waste time troubleshooting.\n\n---\n\n**Actual method signature**\nhttps://github.com/pydantic/pydantic/blob/5d4a3c8cb356fcdad925b7276b5338c24e6cf653/pydantic/main.py#L317\n\n<br/>\n\n**Method signature in documentation, missing `**`**\n<img width=\"600\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/67583666-4d36-4288-81c8-4bc0b0189cf8\" />",
+      "expected": {
+        "is_duplicate": true,
+        "duplicate_of": 13341
+      },
+      "meta": {
+        "method": "synthetic_paraphrase",
+        "original_title": "API Docs are missing kwarg indicators"
+      }
+    },
+    {
+      "id": "distinct-13207",
+      "kind": "distinct",
+      "source_repo": "pydantic/pydantic",
+      "issue_id": 13207,
+      "input_text": "Cannot use `None` as type argument\n\n### Initial Checks\n\n- [x] I confirm that I'm using Pydantic V2\n\n### Description\n\nPydantic's BaseModel.__class_getitem__ is annotated as `typevar_values: type[Any] | tuple[type[Any], ...]`, which causes type checkers to reject `None` as a type argument even though `None` is a valid PEP 484 type\nannotation meaning `type(None)` / `NoneType`.\n\nError in PyCharm: `Expected type 'type | tuple[type, ...]', got 'type[None]'`\n\nRoot cause: pydantic/main.py BaseModel.__class_getitem__ signature should accept\n`None` (and other special forms) as valid type arguments, not just `type[Any]`.\n\nWe could use `NoneType` to get rid of the problem, however, I suggest we update annotation on pydantic side.\n\n### Example Code\n\n```Python\nimport pydantic as p\n\n\nclass Box[T](p.BaseModel):\n    pass\n\n\n# Triggers the warning because Pydantic's __class_getitem__ is typed as\n# typevar_values: type[Any] | tuple[type[Any], ...]\n# and None is not type[Any]:\nx = Box[None]()\n```\n\n### Python, Pydantic & OS Version\n\n```Text\npydantic version: 2.12.5\n        pydantic-core version: 2.41.5\n          pydantic-core build: profile=release pgo=false\n               python version: 3.12.1 (main, Jan 29 2024, 11:55:01) [Clang 15.0.0 (clang-1500.1.0.2.5)]\n                     platform: macOS-26.4.1-arm64-arm-64bit\n             related packages: pydantic-settings-2.13.1 typing_extensions-4.15.0\n                       commit: unknown\n```",
+      "expected": {
+        "is_duplicate": false,
+        "duplicate_of": null
+      },
+      "meta": {
+        "method": "held_out",
+        "nearest_non_self_cosine": 0.7525
+      }
+    },
+    {
+      "id": "sev-rust-158378",
+      "kind": "severity",
+      "source_repo": "rust-lang/rust",
+      "issue_id": 158378,
+      "input_text": "dist-i686-msvc hang on lint-docs\n\nOn dist-i686-mscv, lint-docs consistently hangs in CI.\nExample run: https://github.com/rust-lang/rust/pull/158342#issuecomment-4788930551\n\nIn this try build I added some extra logging: https://github.com/rust-lang/rust/pull/158363#issuecomment-4790859618\nThe last thing this prints is:\n```\n  [lint-docs] Generating output for missing_debug_implementations\n  compiling lint missing_debug_implementations\n  running: \"D:\\\\a\\\\rust\\\\rust\\\\build\\\\i686-pc-windows-msvc\\\\stage1\\\\bin\\\\rustc.exe\" \"--edition=2024\" \"-Zunstable-options\" \"--error-format=json\" \"--target\" \"i686-pc-windows-msvc\" \"lint_example.rs\"\n  #![deny(missing_debug_implementations)]\n  pub struct Foo;\n  fn main() {}\n```\n\nI've ran this multiple times and it always gets stuck on this point\n\nZulip thread: [#t-infra > dist-i686-msvc hang @ \ud83d\udcac](https://rust-lang.zulipchat.com/#narrow/channel/242791-t-infra/topic/dist-i686-msvc.20hang/near/606330379)",
+      "expected": {
+        "severity": "critical"
+      },
+      "meta": {
+        "priority_label": "P-critical"
+      }
+    },
+    {
+      "id": "fix-13342",
+      "kind": "fix",
+      "source_repo": "pydantic/pydantic",
+      "issue_id": 13342,
+      "input_text": "pydocstyle domain hijacked \u2014 replace with ruff in contributing guide\n\n\n  ## Problem\n\n  The contributing guide references pydocstyle (https://www.pydocstyle.org) for docstring linting.\n  The pydocstyle project is no longer actively maintained and its domain has been hijacked.\n\n  ## Solution\n\n  Replace all pydocstyle references in `docs/contributing.md` with ruff, which Pydantic already\n  uses for docstring linting. Update instructions to reflect actual tooling.\n\n  ## Changes needed\n\n  - Replace pydocstyle linting mention with ruff in `docs/contributing.md`\n  - Update conflict resolution hint to reference ruff instead of pydocstyle",
+      "expected": {
+        "can_fix": true
+      },
+      "meta": {
+        "linked_pr": 13343,
+        "reference_diff": "diff --git a/docs/contributing.md b/docs/contributing.md\n@@ -100,7 +100,7 @@ Run tests and linting locally to make sure everything is working as expected.\n ```bash\n # Run automated code formatting and linting\n make format\n-# Pydantic uses ruff, an awesome Python linter written in rust\n+# Pydantic uses ruff, an awesome Python linter written in Rust\n # https://github.com/astral-sh/ruff\n \n # Run tests and linting\n@@ -165,9 +165,9 @@ When contributing to Pydantic, please make sure that all code is well documented\n \n Pydantic uses [Google-style docstrings](https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings) formatted according to [PEP 257](https://www.python.org/dev/peps/pep-0257/) guidelines. (See [Example Google Style Python Docstrings](https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html) for further examples.)\n \n-[pydocstyle](https://www.pydocstyle.org/en/stable/index.html) is used for linting docstrings. You can run `make format` to check your docstrings.\n+Ruff lints docstrings automatically. You can run `make format` to auto-fix any docstring issues.\n \n-Where this is a conflict between Google-style docstrings and pydocstyle linting, follow the pydocstyle linting hints.\n+Where there is a conflict between Google-style docstrings and Ruff linting, follow the Ruff linting hints.\n \n Class attributes and function arguments should be documented in the format \"name: description.\" When applicable, a return type should be documented with just a description. Types are inferred from the signature."
+      }
+    },
+    {
+      "id": "fix-neg-13336",
+      "kind": "fix",
+      "source_repo": "pydantic/pydantic",
+      "issue_id": 13336,
+      "input_text": "Support `mariadbconnector_async` dialect in `MariaDBDsn`\n\n### Initial Checks\n\n- [x] I have searched Google & GitHub for similar requests and couldn't find anything\n- [x] I have read and followed [the docs](https://pydantic.dev/docs/validation/latest/get-started/) and still think this feature is missing\n\n## Requested feature\n\nThe official MariaDB Connector introduced native async support using the async dialect. `MariaDBDsn` should accept `mariadb+mariadbconnector_async` as a valid scheme alongside the existing dialects.\n\nI believe `AnyUrl` doesn't allow underscores, which might complicate the implementation a bit\n\n```python\n>>> from pydantic import TypeAdapter\n>>> from pydantic.networks import MariaDBDsn\n>>> validate_mariadb = TypeAdapter(MariaDBDsn)\n>>> validate_mariadb.validate_python(\"mariadb+mariadbconnector://user:pass@localhost:3306/db\")\nMariaDBDsn('mariadb+mariadbconnector://user:pass@localhost:3306/db')\n>>> validate_mariadb.validate_python(\"mariadb+mariadbconnector_async://user:pass@localhost:3306/db\")\nTraceback (most recent call last):\n  File \"<stdin>\", line 1, in <module>\n  File \"/home/jape/tech/koodit/testing/.venv/lib/python3.12/site-packages/pydantic/type_adapter.py\", line 441, in validate_python\n    return self.validator.validate_python(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\npydantic_core._pydantic_core.ValidationError: 1 validation error for function-wrap[wrap_val()]\n  Input should be a valid URL, relative URL without a base [type=url_parsing, input_value='mariadb+mariadbconnector...:pass@localhost:3306/db', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/url_parsing\n```\n\n\n## Current MariaDBDsn\n\nhttps://github.com/pydantic/pydantic/blob/5d4a3c8cb356fcdad925b7276b5338c24e6cf653/pydantic/networks.py#L938-L949\n\n## Mariadb async dialect\n\nhttps://mariadb.com/resources/blog/mariadb-python-connector-2-0-0rc2/\n\n```python\nclass MySQLDialect_mariadbconnector_async(MySQLDialect_mariadbconnector):\n    \"\"\"\n    Async dialect for MariaDB Connector/Python.\n\n    Uses lightweight wrapper objects that adapt the async DBAPI to\n    SQLAlchemy's sync-style interface via await_only(). Works with\n    both mariadb (pure Python) and mariadb_c (C extension) backends.\n\n    Usage:\n        from sqlalchemy.ext.asyncio import create_async_engine\n\n        engine = create_async_engine(\n            \"mariadb+mariadbconnector_async://user:pass@host/db\"\n        )\n    \"\"\"\n\n    driver = \"mariadbconnector_async\"\n```\n\nhttps://github.com/mariadb-corporation/mariadb-connector-python/blob/0243821280acfc6a238066025fbaf094253b7b17/mariadb/sqlalchemy_mariadb_async.py#L271\n\n### Affected Components\n\n- [ ] [Compatibility between releases](https://pydantic.dev/docs/validation/latest/get-started/changelog/)\n- [ ] [Data validation/parsing](https://pydantic.dev/docs/validation/latest/concepts/models/#basic-model-usage)\n- [ ] [Data serialization](https://pydantic.dev/docs/validation/latest/concepts/serialization/) - `.model_dump()` and `.model_dump_json()`\n- [ ] [JSON Schema](https://pydantic.dev/docs/validation/latest/concepts/json_schema/)\n- [ ] [Dataclasses](https://pydantic.dev/docs/validation/latest/concepts/dataclasses/)\n- [ ] [Model Config](https://pydantic.dev/docs/validation/latest/concepts/config/)\n- [ ] [Field Types](https://pydantic.dev/docs/validation/latest/api/pydantic/types/) - adding or changing a particular data type\n- [ ] [Function validation decorator](https://pydantic.dev/docs/validation/latest/concepts/validation_decorator/)\n- [ ] [Generic Models](https://pydantic.dev/docs/validation/latest/concepts/models/#generic-models)\n- [ ] [Other Model behaviour](https://pydantic.dev/docs/validation/latest/concepts/models/) - `model_construct()`, pickling, private attributes, ORM mode\n- [ ] [Plugins](https://pydantic.dev/docs/validation/latest/integrations/dev-tools/mypy/) and integration with other tools - mypy, FastAPI, python-devtools, Hypothesis, VS Code, PyCharm, etc.",
+      "expected": {
+        "can_fix": false
+      },
+      "meta": {
+        "reason": "feature_request_should_escalate",
+        "labels": [
+          "feature request"
+        ]
+      }
+    },
+    {
+      "id": "dup-13327",
+      "kind": "duplicate",
+      "source_repo": "pydantic/pydantic",
+      "issue_id": 13327,
+      "input_text": "TITLE: TypeAdapter fails to apply schema for union type serialization\n\nBODY:\nWhen attempting to serialize data to JSON using Pydantic's `TypeAdapter` with a union type, the serialization process does not behave as expected. Instead of adhering to the provided schema for the union, the system appears to serialize the underlying object directly. This results in incorrect JSON output and triggers `UserWarning` messages, specifically `PydanticSerializationUnexpectedValue`, indicating that the serializer received an input value of a type different from what it anticipated based on the schema.\n\nFor example, the warnings observed are:\n```\nPydanticSerializationUnexpectedValue(Expected `TestSchema` - serialized value may not be as expected [input_value=TestModel(id=1, name='Obj...', derived_from_id=None), input_type=TestModel])\nPydanticSerializationUnexpectedValue(Expected `DifferentTestSchema` - serialized value may not be as expected [input_value=[TestModel(id=1, name='Ob...ct', derived_from_id=1)], input_type=list])\n```\nThis behavior has been observed while using Pydantic V2.",
+      "expected": {
+        "is_duplicate": true,
+        "duplicate_of": 13327
+      },
+      "meta": {
+        "method": "synthetic_paraphrase",
+        "original_title": "TypeAdapter isn't serializing union types"
+      }
+    },
+    {
+      "id": "distinct-13242",
+      "kind": "distinct",
+      "source_repo": "pydantic/pydantic",
+      "issue_id": 13242,
+      "input_text": "StrEnum instances no longer normalised to str instances when used as dict keys in dynamic model creation\n\n### Initial Checks\n\n- [x] I confirm that I'm using Pydantic V2\n\n### Description\n\nIn 2.12.5, if using a `StrEnum` instance as the key of a dict being passed to `create_model`, that instance would be normalised to a `str` instance before being set as the field name on the dynamically created model. In 2.13.4, it remains as a `StrEnum` instance. \n\nFor example: \n- Create a `main.py`:\n```python\nimport pydantic, enum\n\nclass MyStrEnum(enum.StrEnum):\n    sender = 'sender'\n\ninner = pydantic.create_model('Inner', x=(str, pydantic.Field(default=None)))\nModel = pydantic.create_model('M', **{MyStrEnum.sender: (inner, pydantic.Field(default=None))})\n\ntry:\n    Model.model_validate({'sender': {'x': 123}})\nexcept pydantic.ValidationError as e:\n    loc0 = e.errors()[0]['loc'][0]\n    print(f'loc[0]={loc0!r}  type={type(loc0).__name__}  is str={type(loc0) is str}')\n```\n- Install pydantic 2.12.5 and run the file\n```bash\nuv add pydantic==2.12.5\nuv run main.py\n```\n- Observe the following output\n```\nloc[0]='sender'  type=str  is str=True\n```\n- Now install 2.13.4 and run the file\n```bash\nuv add pydantic==2.13.4\nuv run main.py\n```\n- Observe the following output\n```\nloc[0]=<MyStrEnum.sender: 'sender'>  type=MyStrEnum  is str=False\n```\n\n\n### Example Code\n\n```Python\n\n```\n\n### Python, Pydantic & OS Version\n\n```Text\npydantic version: 2.13.4\npydantic-core version: 2.46.4\npydantic-core build: profile=release pgo=false\npython version: 3.12.3 (main, Mar 23 2026, 19:04:32) [GCC 13.3.0]\nplatform: Linux-6.6.114.1-microsoft-standard-WSL2-x86_64-with-glibc2.39\nrelated packages: pydantic-settings-2.14.1 mypy-2.1.0 fastapi-0.120.1 email-validator-2.3.0 typing_extensions-4.15.0\ncommit: unknown\n```",
+      "expected": {
+        "is_duplicate": false,
+        "duplicate_of": null
+      },
+      "meta": {
+        "method": "held_out",
+        "nearest_non_self_cosine": 0.7068
+      }
+    },
+    {
+      "id": "sev-rust-158206",
+      "kind": "severity",
+      "source_repo": "rust-lang/rust",
+      "issue_id": 158206,
+      "input_text": "Suspected miscompilation with `bool as u32`\n\nGodbolt link: https://godbolt.org/z/G4hxdn4Wa\n\nI tried this code (simplified to a ~minimal version):\n\n```rust\nstruct Store {\n    ring: [Kind; 32],\n}\n\n#[derive(Copy, Clone, Eq, PartialEq)]\nenum Kind {\n    A,\n    B,\n    C\n}\n\nstruct Ring(u32);\n\nimpl Ring {\n    fn peek(&self, store: &Store) -> Kind {\n        store.ring[(self.0 as usize) % 32]\n    }\n\n    pub fn peek_test(&self, store: &Store, expected: Kind) -> bool {\n        self.peek(store) == expected\n    }\n\n    #[inline]\n    pub fn consume_test(&mut self, store: &Store, expected: Kind) -> bool {\n        let x = self.peek_test(store, expected);\n        self.0 += if x { 1 } else { 0 };\n        x\n    }\n\n    // Uses a u32 cast instead of the \n    #[inline]\n    pub fn consume_test_borked(&mut self, store: &Store, expected: Kind) -> bool {\n        let x = self.peek_test(store, expected);\n        self.0 += x as u32;\n        x\n    }\n}\n\n#[unsafe(no_mangle)]\nfn foo(store: &Store, mut lex: Ring) -> usize {\n    if !lex.consume_test(store, Kind::A) {\n        return 0;\n    }\n    match lex.peek(store) {\n        Kind::A => 17,\n        _ => 27,\n    }\n}\n\n#[unsafe(no_mangle)]\nfn foo_borked(store: &Store, mut lex: Ring) -> usize {\n    if !lex.consume_test_borked(store, Kind::A) {\n        return 0;\n    }\n    match lex.peek(store) {\n        Kind::A => 17,\n        _ => 27,\n    }\n}\n```\n\nI expected `foo` and `foo_borked` to have identical behavior/codegen.\n\nInstead, this happened: `foo_borked` compiled into a function that always takes the `Kind::A` branch, never returning 27.\n\n```asm\n; rustc -Copt-level=3 [also =2]\n\nfoo:\n        mov     eax, esi\n        and     eax, 31\n        cmp     byte ptr [rdi + rax], 0\n        je      .LBB0_2\n        xor     eax, eax\n        ret\n.LBB0_2:\n        inc     esi\n        and     esi, 31\n        cmp     byte ptr [rdi + rsi], 0\n        mov     ecx, 17\n        mov     eax, 27\n        cmove   rax, rcx\n        ret\n\nfoo_borked:\n        and     esi, 31\n        xor     ecx, ecx\n        cmp     byte ptr [rdi + rsi], 0\n        mov     eax, 17\n        cmovne  rax, rcx\n        ret\n```\n\nLooking at the LLVM IR with `-Cno-prepopulate-passes` it appears that this is a rustc bug, and given that `-Zmir-opt-level=0` produces valid code (`foo_borked = foo`) this is likely a Mir opt issue.\n\n```llvm\ndefine noundef i64 @foo_borked(ptr noalias nofree noundef readonly captures(address, read_provenance) dereferenceable(32) %store, i32 noundef %0) unnamed_addr {\nstart:\n  %__self_discr.dbg.spill = alloca [8 x i8], align 8\n  %__arg1_discr.dbg.spill = alloca [8 x i8], align 8\n  %expected.dbg.spill1 = alloca [1 x i8], align 1\n  %expected.dbg.spill = alloca [1 x i8], align 1\n  %store.dbg.spill = alloca [8 x i8], align 8\n  %x = alloca [1 x i8], align 1\n  %_0 = alloca [8 x i8], align 8\n  %lex = alloca [4 x i8], align 4\n  store i32 %0, ptr %lex, align 4\n  store ptr %store, ptr %store.dbg.spill, align 8\n  store i8 0, ptr %expected.dbg.spill, align 1\n  store i8 0, ptr %expected.dbg.spill1, align 1\n  store i64 0, ptr %__arg1_discr.dbg.spill, align 8\n  call void @llvm.lifetime.start.p0(ptr %x)\n  %_14 = load i32, ptr %lex, align 4\n  %_13 = zext i32 %_14 to i64\n  %_12 = urem i64 %_13, 32\n  %_15 = icmp ult i64 %_12, 32\n  br i1 %_15, label %bb7, label %panic\n\nbb7:\n  %1 = getelementptr inbounds nuw i8, ptr %store, i64 %_12\n  %_10 = load i8, ptr %1, align 1\n  %__self_discr = zext i8 %_10 to i64\n  store i64 %__self_discr, ptr %__self_discr.dbg.spill, align 8\n  ; %x is being loaded here without a prior store, becoming a poison\n  %2 = load i8, ptr %x, align 1\n  %3 = trunc nuw i8 %2 to i1\n  %4 = icmp ule i1 %3, true\n  call void @llvm.assume(i1 %4)\n  %_8 = zext i1 %3 to i32\n  %5 = load i32, ptr %lex, align 4\n  %6 = add i32 %5, %_8\n  store i32 %6, ptr %lex, align 4\n  %7 = icmp eq i64 %__self_discr, 0\n  br i1 %7, label %bb1, label %bb2\n\npanic:\n  call void @core[dcb47395e1cc1d61]::panicking::panic_bounds_check(i64 noundef %_12, i64 noundef 32, ptr noalias nofree noundef reado\n\u2026[truncated]",
+      "expected": {
+        "severity": "critical"
+      },
+      "meta": {
+        "priority_label": "P-critical"
+      }
+    },
+    {
+      "id": "fix-13318",
+      "kind": "fix",
+      "source_repo": "pydantic/pydantic",
+      "issue_id": 13318,
+      "input_text": "JSON schema ignores `pathlib.WindowsPath` defaults\n\n### Initial Checks\n\n- [x] I confirm that I'm using Pydantic V2\n\n### Description\n\n`pathlib.WindowsPath` is excluded from `GenerateSchema.match_type` but `pathlib.PosixPath` is not. Is it intentional? \n\nhttps://github.com/pydantic/pydantic/blob/ca31682bd9376283f28cc35f66110b7040e7602d/pydantic/_internal/_generate_schema.py#L149-L156\n\nCould not find any info about this but the serialization docs also mention all of them explicitly except `pathlib.WindowsPath`\n\nhttps://pydantic.dev/docs/validation/latest/api/pydantic/standard_library_types#paths\n\n<img width=\"536\" height=\"340\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/cad3a78c-493a-4474-aba3-568478c8f09a\" />\n\nThis makes the snippet bellow generate different schemas on Unix/Windows since the `Path` constructor actually returns `WindowsPath` or `PosixPath` according to the platform\n\n\n\n\n\n### Example Code\n\n```Python\nfrom pathlib import Path\n\nfrom pydantic import BaseModel\n\n\nclass Config(BaseModel):\n    path: Path = Path(\"config.toml\")\n\n\n# default is omitted on Windows, but included on Unix\nprint(Config.model_json_schema())\n# PydanticJsonSchemaWarning: Default value config.toml is not JSON serializable; excluding default from JSON schema [non-serializable-default]\n# PydanticSchemaGenerationError: Unable to generate pydantic-core schema for <class 'pathlib.WindowsPath'>.\n# output -> {'properties': {'path': {'format': 'path', 'title': 'Path', 'type': 'string'}}, 'title': 'Config', 'type': 'object'}\n```\n\n### Python, Pydantic & OS Version\n\n```Text\npydantic version: 2.13.4\npydantic-core version: 2.46.4\npydantic-core build: profile=release pgo=false\npython version: 3.13.12 (main, Mar 10 2026, 18:14:40) [MSC v.1944 64 bit (AMD64)]\nplatform: Windows-11-10.0.26200-SP0\nrelated packages: typing_extensions-4.15.0\ncommit: unknown\n```",
+      "expected": {
+        "can_fix": true
+      },
+      "meta": {
+        "linked_pr": 13326,
+        "reference_diff": "diff --git a/docs/api/standard_library_types.md b/docs/api/standard_library_types.md\n@@ -1494,6 +1494,7 @@ Standard library types:\n * [`pathlib.Path`][].\n * [`pathlib.PurePath`][].\n * [`pathlib.PosixPath`][].\n+* [`pathlib.WindowsPath`][].\n * [`pathlib.PurePosixPath`][].\n * [`pathlib.PureWindowsPath`][].\n * [`os.PathLike`][] (must be parameterized with [`str`][], [`bytes`][] or [`Any`][typing.Any]).\ndiff --git a/pydantic/_internal/_generate_schema.py b/pydantic/_internal/_generate_schema.py\n@@ -151,6 +151,7 @@\n     pathlib.Path,\n     pathlib.PurePath,\n     pathlib.PosixPath,\n+    pathlib.WindowsPath,\n     pathlib.PurePosixPath,\n     pathlib.PureWindowsPath,\n ]\ndiff --git a/tests/types/test_path.py b/tests/types/test_path.py\n@@ -0,0 +1,12 @@\n+from pathlib import Path\n+\n+from pydantic import BaseModel\n+\n+\n+def test_path_default():\n+    \"\"\"Regression test for https://github.com/pydantic/pydantic/issues/13318.\"\"\"\n+\n+    class Config(BaseModel):\n+        path: Path = Path('config.toml')\n+\n+    assert Config.model_json_schema()['properties']['path']['default'] == 'config.toml'"
+      }
+    },
+    {
+      "id": "fix-neg-13293",
+      "kind": "fix",
+      "source_repo": "pydantic/pydantic",
+      "issue_id": 13293,
+      "input_text": "Provide a clearer error message when installing a Pydantic version on an unsupported Python version\n\n### Initial Checks\n\n- [x] I confirm that I'm using Pydantic V2\n\n### Description\n\nI looked in existent issues, but didn't find one related enough to just add a comment.\n\nWhen trying to install a package that depends on pydantic >=2.10.6,<2.11 with python 3.14, I would expect a dependency resolver failure, because pydantic 2.10.x is not compatible with python 3.14, instead I get a build error.\n\nI think it would be useful if the incompatibility with an upcoming python version be added to the affected package (pydantic or pydantic-core in this case) as soon as it is discovered. This would make very clear where the problem is, and point users to the solution.\n\nThank you for the hard work on pydantic, I appreciate it very much.\n\n### Example Code\n\n```shell-session\n$ mkdir test\n$ cd test\n$ uv init\nInitialized project `test`\n$ uv add 'pydantic>=2.10,<2.11'\nUsing CPython 3.14.5\nCreating virtual environment at: .venv\nResolved 5 packages in 555ms\n  \u00d7 Failed to build `pydantic-core==2.27.2`\n  \u251c\u2500\u25b6 The build backend returned an error\n  \u2570\u2500\u25b6 Call to `maturin.build_wheel` failed (exit status: 1)\n\n      [stdout]\n      cargo 1.96.0 (30a34c682 2026-05-25)\n      Rust not found, installing into a temporary directory\n      Running `maturin pep517 build-wheel -i /home/user/.cache/uv/builds-v0/.tmpUN7aD6/bin/python --compatibility off`\n\n      [stderr]\n      Python reports SOABI: cpython-314-x86_64-linux-gnu\n      Computed rustc target triple: x86_64-unknown-linux-gnu\n      Installation directory: /home/user/.cache/puccinialin\n      Rustup already downloaded\n      Installing rust to /home/user/.cache/puccinialin/rustup\n      warn: It looks like you have an existing rustup settings file at:\n      warn: /home/user/.cache/puccinialin/rustup/settings.toml\n      warn: Rustup will install the default toolchain as specified in the settings file,\n      warn: instead of the one inferred from the default host triple.\n      info: profile set to minimal\n      info: setting default host triple to x86_64-unknown-linux-gnu\n      warn: Updating existing toolchain, profile choice will be ignored\n      info: syncing channel updates for stable-x86_64-unknown-linux-gnu\n      info: default toolchain set to stable-x86_64-unknown-linux-gnu\n      Checking if cargo is installed\n      \ud83d\udce6 Including license file `LICENSE`\n      \ud83c\udf79 Building a mixed python/rust project\n      \ud83d\udc0d Found CPython 3.14 at /home/user/.cache/uv/builds-v0/.tmpUN7aD6/bin/python\n      \ud83d\udd17 Found pyo3 bindings\n      \ud83d\udce1 Using build options features, bindings from pyproject.toml\n         Compiling proc-macro2 v1.0.86\n         Compiling unicode-ident v1.0.12\n         Compiling target-lexicon v0.12.14\n         Compiling python3-dll-a v0.2.10\n         Compiling once_cell v1.19.0\n         Compiling stable_deref_trait v1.2.0\n         Compiling autocfg v1.3.0\n         Compiling heck v0.5.0\n         Compiling libc v0.2.155\n         Compiling version_check v0.9.5\n         Compiling writeable v0.5.5\n         Compiling litemap v0.7.3\n         Compiling rustversion v1.0.17\n         Compiling cfg-if v1.0.0\n         Compiling static_assertions v1.1.0\n         Compiling memchr v2.7.4\n         Compiling icu_locid_transform_data v1.5.0\n         Compiling radium v0.7.0\n         Compiling tinyvec_macros v0.1.1\n         Compiling lexical-util v0.8.5\n         Compiling tinyvec v1.6.1\n         Compiling serde v1.0.214\n         Compiling ahash v0.8.11\n         Compiling num-traits v0.2.19\n         Compiling memoffset v0.9.1\n         Compiling tap v1.0.1\n         Compiling smallvec v1.13.2\n         Compiling icu_properties_data v1.5.0\n         Compiling wyz v0.5.1\n         Compiling utf16_iter v1.0.5\n         Compiling indoc v2.0.5\n         Compiling quote v1.0.36\n         Compiling pyo3-build-config v0.22.6\n         Compiling icu_normalizer_data v1.5.0\n         Compiling getrandom v0.2.15\n         Compiling aho-corasick v1.1.3\n         Compil\n\u2026[truncated]",
+      "expected": {
+        "can_fix": false
+      },
+      "meta": {
+        "reason": "feature_request_should_escalate",
+        "labels": [
+          "feature request",
+          "deferred"
+        ]
+      }
+    },
+    {
+      "id": "dup-13325",
+      "kind": "duplicate",
+      "source_repo": "pydantic/pydantic",
+      "issue_id": 13325,
+      "input_text": "TITLE: Pydantic 2.13 versioned documentation URL is inaccessible\n\nBODY:\nI've encountered a problem with the Pydantic 2.13 documentation. The specific URL for version 2.13, for instance `https://pydantic.dev/docs/validation/2.13/`, does not resolve or display any content. It seems that the documentation for this version is currently only reachable via the `latest` alias, such as `https://pydantic.dev/docs/validation/latest/`.",
+      "expected": {
+        "is_duplicate": true,
+        "duplicate_of": 13325
+      },
+      "meta": {
+        "method": "synthetic_paraphrase",
+        "original_title": "Pydantic 2.13 does not have stable docs link"
+      }
+    },
+    {
+      "id": "distinct-13208",
+      "kind": "distinct",
+      "source_repo": "pydantic/pydantic",
+      "issue_id": 13208,
+      "input_text": "`model_copy(update=...)` inconsistencies\n\n### Initial Checks\n\n- [x] I confirm that I'm using Pydantic V2\n\n### Description\n\n#### 1\n\nWhen doing a `model_copy(update={\"_private_member\":\"new_val\"})` on a model with a PrivateAttr, the new value for private attribute doesn't properly replace the old one (it gets added to `__dict__` instead).\n\n```python\nfrom pydantic import BaseModel, PrivateAttr\n\nclass M(BaseModel):\n    _private: str = PrivateAttr(default=\"old\")\n\nm2 = M.model_validate({}).model_copy(update={\"_private\":\"new\"})\nprint(f\"{m2.__dict__=}\")\nprint(f\"{m2.__private_attributes__=}\")\n```\n\nprints\n\n```text\nm2.__dict__={'_private': 'new'}\nm2.__private_attributes__={'_private': ModelPrivateAttr(default='old')}\n```\n\n#### 2\n\nWhen doing a `model_copy(update={\"extra_member\": \"some_val\"})` on a model where extras are forbidden, the extra member is allowed:\n\n```python\nfrom pydantic import BaseModel,\n\nclass M(BaseModel, extra=\"forbid\"):\n    pass\n\nm2 = M.model_validate({}).model_copy(update={\"extra\":\"new\"})\nprint(f\"{m2.extra=}\")\nprint(f\"{m2.model_config.get('extra')=}\")\n```\n\nprints\n\n```text\nm2.extra='new'\nm2.model_config.get('extra')='forbid'\n```\n\n### Python, Pydantic & OS Version\n\n```Text\npydantic version: 2.14.0a0+dev\n        pydantic-core version: 2.46.0\n          pydantic-core build: profile=release pgo=false\n               python version: 3.11.2 (main, Apr  8 2026, 01:58:00) [GCC 12.2.0]\n                     platform: Linux-6.12.76-linuxkit-aarch64-with-glibc2.36\n             related packages: typing_extensions-4.15.0\n                       commit: 813d1b8f8\n```",
+      "expected": {
+        "is_duplicate": false,
+        "duplicate_of": null
+      },
+      "meta": {
+        "method": "held_out",
+        "nearest_non_self_cosine": 0.7068
+      }
+    },
+    {
+      "id": "sev-rust-158165",
+      "kind": "severity",
+      "source_repo": "rust-lang/rust",
+      "issue_id": 158165,
+      "input_text": "BTreeMap::split_off is not panic-safe leading to a potential double-free\n\n# Summary\n\nA panic from a key comparator during `BTreeMap::split_off` can unwind after `Root::split_off` has already moved a suffix into the temporary right-hand tree, but before the lower levels are split, borders are repaired, and the map length is recomputed. After catching the panic, the original map can have a stale length and a partially-detached structure. Consuming iteration can then double-free values in entirely safe Rust.\n\nThis is very related to the allocator-panic insertion issue (#156490), but the trigger/path here is different.\n\nReproducer: \n\n```rs\n#![forbid(unsafe_code)]\nuse std::{cmp::Ordering, collections::BTreeMap, panic::catch_unwind, sync::Mutex};\n\n#[derive(PartialEq, Eq)]\nstruct K(i32);\n\nimpl PartialOrd for K {\n    fn partial_cmp(&self, r: &Self) -> Option<Ordering> { Some(self.cmp(r)) }\n}\nimpl Ord for K {\n    fn cmp(&self, r: &Self) -> Ordering {\n        if self.0 == 6 && r.0 == 0 { panic!(\"cmp panic\") }\n        self.0.cmp(&r.0)\n    }\n}\n\nfn main() {\n    let m = Mutex::new(BTreeMap::new());\n    {\n        let mut g = m.lock().unwrap();\n        for i in (6..12).chain(0..6) {\n            g.insert(K(i), Box::new(0u8));\n        }\n    }\n\n    assert!(catch_unwind(|| {\n        drop(m.lock().unwrap().split_off(&K(6)));\n    }).is_err());\n\n    let m = m.into_inner().unwrap_or_else(|p| p.into_inner());\n    eprintln!(\"len={} reachable={}\", m.len(), m.range(..).count());\n    drop(m.into_iter().nth_back(5));\n}\n```\n\nThis replicates on stable, beta, and nightly (1.96.0, 1.97.0, 1.98.0) ([playground](https://play.rust-lang.org/?version=stable&mode=debug&edition=2024&gist=3d763cb7cd020654dd85bc988c958cc2)):\n\n```\nthread 'main' (41) panicked at src/main.rs:12:38:\ncmp panic\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\nlen=12 reachable=6\nfree(): double free detected in tcache 2\n```\n\n# Mechanism\n`Root::split_off` currently interleaves comparison/search and destructive moves roughly like:\n\n1. `left_node.search_node(key)`\n2. `split_edge.move_suffix(&mut right_node)`\n3. descend to the next level\n4. repeat\n\nIn this repro, the first iteration moves a suffix at the root. The next lower-level search_node invokes `cmp(6, 0)` and panics. Unwinding skips `fix_right_border`, `fix_left_border`, and the caller-side `calc_split_length / self.length` update in map.rs. The original map is left with its old length (12) but only part of the tree reachable (6 entries), and later iteration trusts the stale length.\n\n---\n\nI used Codex to find this issue but manually verified it. I'm guessing a fix for this will be similar to that for #156490 but may have to be applied to both code paths.",
+      "expected": {
+        "severity": "high"
+      },
+      "meta": {
+        "priority_label": "P-high"
+      }
+    },
+    {
+      "id": "fix-13272",
+      "kind": "fix",
+      "source_repo": "pydantic/pydantic",
+      "issue_id": 13272,
+      "input_text": "Segfault stack overflow when a PEP 695 type alias resolves to a self-referential model with no Union/Optional base case.\n\n### Initial Checks\n\n- [x] I confirm that I'm using Pydantic V2\n\n### Description\n\nA pydantic BaseModel with unbounded recursion on a `type` alias causes a segmentation fault/stack overflow that aborts the interpreter.\n\nThe error occurs across various different Python and Pydantic versions. All of the below are affected:\n\n|Python|Pydantic|Pydantic Core|\n|----------|-------------|--------------------|\n|3.14.5|2.13.4|2.46.4|\n|3.13.5|2.13.4|2.46.4|\n|3.13.5|2.12.5|2.41.5|\n\nOn Python 3.13, the below script just fails without any output. The exit code is 139.\nOn Python 3.14, an informative error message is produced. The exit code is 134.\n\n```\nFatal Python error: _Py_CheckRecursiveCall: Unrecoverable stack overflow (used 8169 kB) while calling a Python object\nPython runtime state: initialized\n\nCurrent thread 0x00007fbfe553ebc0 [python] (most recent call first):\n  File \"/usr/lib/python3.14/site-packages/pydantic/plugin/_schema_validator.py\", line 53 in create_schema_validator\n  File \"/usr/lib/python3.14/site-packages/pydantic/_internal/_model_construction.py\", line 690 in complete_model_class\n  File \"/usr/lib/python3.14/site-packages/pydantic/main.py\", line 683 in model_rebuild\n  File \"/home/mgoerner/Werkbank/gitlab.com/solactive/it/dev/dce/data-products/xwap/xwap-api/mre.py\", line 16 in <module>\n[1]    66457 abort (core dumped)  python mre.py\n```\n\nI agree that the user code in the MRE is itself ill-formed and does not represent anything anyone should use in production. However, I firmly believe that regardless of any input, a segmentation fault should not be produced.\n\n### Example Code\n\n```Python\n# pydantic_segfault_mre.py\n#\n# Expected: pydantic builds a recursive (\"definition-ref\") schema, or raises a\n#           clean Python error (e.g. RecursionError / PydanticUserError).\n# Actual:   the interpreter dies with SIGSEGV (exit code 139).\nfrom pydantic import BaseModel\n\n# PEP 695 type alias that resolves to a single, self-referential model.\ntype Alias = Node\n\n\nclass Node(BaseModel):\n    underlying: \"Alias\"\n\n\nNode.model_rebuild()  # <-- crashes here\nprint(\"reached the end -- no crash\")\n```\n\n### Python, Pydantic & OS Version\n\n```Text\npydantic version: 2.13.4\n        pydantic-core version: 2.46.4\n          pydantic-core build: profile=release pgo=false\n               python version: 3.14.5 (main, May 21 2026, 23:23:37) [GCC 16.1.1 20260430]\n                     platform: Linux-7.0.11-1-cachyos-x86_64-with-glibc2.43\n             related packages: typing_extensions-4.15.0\n                       commit: unknown\n```",
+      "expected": {
+        "can_fix": true
+      },
+      "meta": {
+        "linked_pr": 13276,
+        "reference_diff": "diff --git a/pydantic/_internal/_generate_schema.py b/pydantic/_internal/_generate_schema.py\n@@ -2834,6 +2834,15 @@ def finalize_schema(self, schema: CoreSchema) -> CoreSchema:\n \n         remaining_defs: dict[str, CoreSchema] = {}\n \n+        # References that will be kept as actual definitions (i.e. not inlined). When resolving an\n+        # \"intermediate\" `'definition-ref'` schema (see `_resolve_definition()`), we must not follow\n+        # the reference chain through one of these definitions:\n+        kept_refs = {\n+            ref\n+            for ref, inlinable_def_ref in gather_result['collected_references'].items()\n+            if inlinable_def_ref is None or _inlining_behavior(inlinable_def_ref) == 'keep'\n+        }\n+\n         # Note: this logic doesn't play well when core schemas with deferred discriminator metadata\n         # and references are encountered. See the `test_deferred_discriminated_union_and_references()` test.\n         for ref, inlinable_def_ref in gather_result['collected_references'].items():\n@@ -2844,20 +2853,20 @@ def finalize_schema(self, schema: CoreSchema) -> CoreSchema:\n                     #    the only one. Transform it into the definition it points to.\n                     #  - Do not store the definition in the `remaining_defs`.\n                     inlinable_def_ref.clear()  # pyright: ignore[reportAttributeAccessIssue]\n-                    inlinable_def_ref.update(self._resolve_definition(ref, definitions))  # pyright: ignore\n+                    inlinable_def_ref.update(self._resolve_definition(ref, definitions, kept_refs))  # pyright: ignore\n                 elif inlining_behavior == 'preserve_metadata':\n                     # `ref` was encountered, and only once, but contains discriminator metadata.\n                     # We will do the same thing as if `inlining_behavior` was `'inline'`, but make\n                     # sure to keep the metadata for the deferred discriminator application logic below.\n                     meta = inlinable_def_ref.pop('metadata')\n                     inlinable_def_ref.clear()  # pyright: ignore[reportAttributeAccessIssue]\n-                    inlinable_def_ref.update(self._resolve_definition(ref, definitions))  # pyright: ignore\n+                    inlinable_def_ref.update(self._resolve_definition(ref, definitions, kept_refs))  # pyright: ignore\n                     inlinable_def_ref['metadata'] = meta\n             else:\n                 # `ref` was encountered, at least two times (or only once, but with metadata or a serialization schema):\n                 # - Do not inline the `'definition-ref'` schemas (they are not provided in the gather result anyway).\n                 # - Store the definition in the `remaining_defs`\n-                remaining_defs[ref] = self._resolve_definition(ref, definitions)\n+                remaining_defs[ref] = self._resolve_definition(ref, definitions, kept_refs)\n \n         for cs in gather_result['deferred_discriminator_schemas']:\n             discriminator: str | None = cs['metadata'].pop('pydantic_internal_union_discriminator', None)  # pyright: ignore[reportTypedDictNotRequiredAccess]\n@@ -2875,7 +2884,7 @@ def finalize_schema(self, schema: CoreSchema) -> CoreSchema:\n             schema = core_schema.definitions_schema(schema=schema, definitions=[*remaining_defs.values()])\n         return schema\n \n-    def _resolve_definition(self, ref: str, definitions: dict[str, CoreSchema]) -> CoreSchema:\n+    def _resolve_definition(self, ref: str, definitions: dict[str, CoreSchema], kept_refs: set[str]) -> CoreSchema:\n         definition = definitions[ref]\n         if definition['type'] != 'definition-ref':\n             return definition\n@@ -2885,6 +2894,14 @@ def _resolve_definition(self, ref: str, definitions: dict[str, CoreSchema]) -> C\n         visited: set[str] = set()\n         while definition['type'] == 'definition-ref' and _inlining_behavior(definition) == 'inline':\n             schema_ref = definition['schema_ref']\n+            if schema_ref in kept_refs and schema_ref != ref:\n+                # The reference chain leads to a *different* definition that is kept on its own (e.g. a\n+                # recursive model referenced through a PEP 695 type alias). Resolve to a reference\n+                # pointing to it instead of following the chain and inlining a copy of that definition,\n+                # which could otherwise introduce a reference cycle in the resulting schema.\n+                # Note: when `schema_ref == ref`, the reference points back to itself, which is a genuine\n+                # circular reference and is reported as an error by the `visited` logic below.\n+                return {**definition, 'ref': ref}\n             if schema_ref in visited:\n                 raise PydanticUserError(\n                     f'{ref} contains a circular reference to itself.', code='circular-reference-schema'\ndiff --git a/tests/test_type_alias_type.py b/tests/test_type_alias_type.py\n@@ -432,6 +432,20 @@ class MyModel(BaseModel):\n             a: C\n \n \n+def test_type_alias_to_recursive_model() -> None:\n+    \"\"\"https://github.com/pydantic/pydantic/issues/13272\"\"\"\n+\n+    Alias = TypeAliasType('Alias', 'Model')\n+\n+    class Model(BaseModel):\n+        f: Alias | None = None\n+\n+    Model.model_rebuild()\n+\n+    node = Model.model_validate({'f': {'f': {'f': None}}})\n+    assert node.f.f.f is None\n+\n+\n def test_type_alias_type_with_serialization() -> None:\n     \"\"\"Regression test for https://github.com/pydantic/pydantic/issues/11642."
+      }
+    },
+    {
+      "id": "dup-13321",
+      "kind": "duplicate",
+      "source_repo": "pydantic/pydantic",
+      "issue_id": 13321,
+      "input_text": "TITLE: Pydantic 2.13.4 Strips `Annotated` Types from Generic Model Fields\n\nBODY:\nThis report details an issue encountered in Pydantic V2 where `Annotated` type information is lost when used within generic models. The problem manifests after upgrading Pydantic from version 2.12.5 to 2.13.4.\n\nSpecifically, when inspecting the `annotation` of a field within a `BaseModel` that itself uses a generic type parameterized with `Annotated`, the `Annotated` wrapper and its metadata are no longer preserved in Pydantic 2.13.4. Instead, only the base type is reflected.\n\nThe following example code demonstrates this behavior:\n\n```Python\nfrom typing import TypeVar, Generic, Annotated\n\nfrom pydantic import BaseModel\n\nT = TypeVar(\"T\")\n\nclass ValueWithMetadata(BaseModel, Generic[T]):\n    value: T\n    metadata: str\n\nclass MyModel(BaseModel):\n    a: ValueWithMetadata[str]\n    b: ValueWithMetadata[Annotated[str, 'my-annotation']]\n\n\na_value_annotation = MyModel.model_fields[\"a\"].annotation.model_fields[\"value\"].annotation\nb_value_annotation = MyModel.model_fields[\"b\"].annotation.model_fields[\"value\"].annotation\nprint(\"a\", repr(a_value_annotation))\nprint(\"b\", repr(b_value_annotation))\n```\n\nRunning this code produces different outputs depending on the Pydantic version:\n\n**With Pydantic 2.12.5:**\n```\na <class 'str'>\nb typing.Annotated[str, 'my-annotation']\n```\n\n**With Pydantic 2.13.4:**\n```\na <class 'str'>\nb <class 'str'>\n```\nAs shown, the `Annotated` type for field `b` is completely gone in the newer version.\n\nIt has been observed that if the `Annotated` type is wrapped with `Optional` (e.g., `b: ValueWithMetadata[Optional[Annotated[str, 'my-annotation']]]`), the annotation is correctly preserved. It is currently unknown if this issue is related to https://github.com/pydantic/pydantic/issues/13085.\n\n**Environment Details:**\n```Text\npydantic version: 2.13.4\n        pydantic-core version: 2.46.4\n          pydantic-core build: profile=release pgo=false\n               python version: 3.11.11 (main, Feb  5 2025, 18:58:27) [Clang 19.1.6 ]\n                     platform: macOS-14.7.2-arm64-arm-64bit\n             related packages: mypy-1.19.1 typing_extensions-4.15.0\n                       commit: unknown\n```",
+      "expected": {
+        "is_duplicate": true,
+        "duplicate_of": 13321
+      },
+      "meta": {
+        "method": "synthetic_paraphrase",
+        "original_title": "Annotations lost when using Generic models"
+      }
+    },
+    {
+      "id": "distinct-13158",
+      "kind": "distinct",
+      "source_repo": "pydantic/pydantic",
+      "issue_id": 13158,
+      "input_text": "Mypy pluging not checking arg-type error on BaseModel inherited class\n\n### Initial Checks\n\n- [x] I confirm that I'm using Pydantic V2\n\n### Description\n\nWhen I run mypy without the pydantic plugin, it correctly checks that there is an arg-type error:\n\nuv run mypy main.py --strict\nmain.py:8: error: Argument \"attr\" to \"Model\" has incompatible type \"str\"; expected \"float\"  [arg-type]\n\nbut when I add it to pyproject.toml:\n\n[tool.mypy]\nplugins = [\"pydantic.mypy\"]\n\nI get the following:\n\nuv run mypy main.py --strict\nSuccess: no issues found in 1 source file\n\nAs far as I tested, it happens for every type (not only when trying to assign a str to a float attribute) \n\n### Example Code\n\n```Python\nfrom pydantic import BaseModel\n\n\nclass Model(BaseModel):\n    attr: float\n\ndef main() -> None:\n    Model(attr=\"attr\")\n\n\nif __name__ == \"__main__\":\n    main()\n```\n\n### Python, Pydantic & OS Version\n\n```Text\npydantic version: 2.13.3\n        pydantic-core version: 2.46.3\n          pydantic-core build: profile=release pgo=false\n               python version: 3.13.4 (main, Jun  4 2025, 17:37:06) [Clang 20.1.4 ]\n                     platform: Linux-6.8.0-110-generic-x86_64-with-glibc2.35\n             related packages: typing_extensions-4.15.0 mypy-1.20.2\n                       commit: unknown\n```",
+      "expected": {
+        "is_duplicate": false,
+        "duplicate_of": null
+      },
+      "meta": {
+        "method": "held_out",
+        "nearest_non_self_cosine": 0.7036
+      }
+    },
+    {
+      "id": "sev-rust-157743",
+      "kind": "severity",
+      "source_repo": "rust-lang/rust",
+      "issue_id": 157743,
+      "input_text": "Performance regression since 1.93 related to MaybeUninit being wrongfully initialized\n\nSince rustc 1.93 (likely #147827), initializing newtype wrapper of a struct that contains an integer type and a MaybeUninit field generates code to initialize the entire struct at -O2, instead of writing only the initialized integer field.\n\nFirst bad nightly: nightly-2025-11-24 (commit c23ed3ef28b)\nLast good nightly: nightly-2025-11-23 (commit 94b49fd99)\nStill broken as of: 1.98.0-nightly (2026-06-11, LLVM 22.1.6)\n\nReal-world impact: this caused a 22% performance regression in a specific test in the Firefox performance suite, as reported in https://bugzilla.mozilla.org/show_bug.cgi?id=2046376.\nThe hot call site creates a struct of three empty SmallVecs (from the smallvec crate with the union feature enabled). With rustc 1.93 the hot path now calls memset for 1224-bytes instead of three 8-byte stores.\n\n### Minimal reproducer\n\n```rust\nuse std::mem::MaybeUninit;\n\npub struct Vec { cap: usize, data: MaybeUninit<[u64; 2]> }\npub struct Wrap(Vec);\n\n#[no_mangle]\n#[inline(never)]\npub fn make() -> Wrap {\n    Wrap(Vec { cap: 0, data: MaybeUninit::uninit() })\n}\n```\nhttps://godbolt.org/z/KnarEEon8\n\n1.92 generates:\n```\nmake:\n        movq    %rdi, %rax\n        movq    $0, 16(%rdi)\n        retq\n```\n\n1.93 generates:\n```\nmake:\n        movq    %rdi, %rax\n        xorps   %xmm0, %xmm0\n        movups  %xmm0, (%rdi)\n        movq    $0, 16(%rdi)\n        retq\n```\n\nWith larger arrays in the MaybeUninit, more movups happen, up to the point where it may choose to use memset instead.\nIOW, 19.3 is initializing the whole struct instead. Without the wrapping, the MaybeUninit is properly not initialized.",
+      "expected": {
+        "severity": "high"
+      },
+      "meta": {
+        "priority_label": "P-high"
+      }
+    },
+    {
+      "id": "fix-13215",
+      "kind": "fix",
+      "source_repo": "pydantic/pydantic",
+      "issue_id": 13215,
+      "input_text": "__slots__ is not propagated to generic parameterizations, silently re-adding __weakref__\n\n## Description\n\n`BaseModel.__class_getitem__` synthesizes a new class for each parameterization (`Model[X]`) via `pydantic/_internal/_generics.py::create_generic_submodel`. That function builds the class with a namespace containing only `__module__` (plus what `prepare_class` adds) and never forwards `__slots__` from `origin`. Because the new class body has no `__slots__`, Python's class machinery adds the default `__dict__` and `__weakref__` descriptors. The parent's `__slots__ = ()` is silently discarded for every parameterization.\n\n## Reproducer\n\n```python\nimport weakref\nimport pydantic\n\nclass Envelope[T](pydantic.BaseModel):\n    __slots__ = ()\n    content: None | T = None\n\nbase = Envelope()\nprint(\"base __weakref__:\", \"__weakref__\" in type(base).__dict__)       # False - good\nweakref.ref(base)                                                       # TypeError - good\n\nparam = Envelope[int]()\nprint(\"param __weakref__:\", \"__weakref__\" in type(param).__dict__)     # True  - unexpected\nweakref.ref(param)                                                      # succeeds - unexpected\n\n# Even an explicit subclass with __slots__ = () cannot recover, because\n# the auto-synthesized intermediate already carries __weakref__:\nclass Sub(Envelope[int]):\n    __slots__ = ()\nweakref.ref(Sub())                                                      # succeeds\n```\n\n## Expected\n\n`Envelope[int]` (and any user subclass of it) should honor the `__slots__ = ()` declared on the origin and reject `weakref.ref(...)`, matching the un-parameterized `Envelope`.\n\n## Actual\n\nThe synthesized `Envelope[int]` class has neither `__slots__` in its own dict nor any inherited declaration that suppresses default storage, so `__weakref__` (and `__dict__`, but `BaseModel` itself forces that one) reappears on every parameterized subclass and on anything inheriting from it.\n\n## Root cause\n\n`pydantic/_internal/_generics.py::create_generic_submodel` constructs the class with:\n\n```python\nnamespace: dict[str, Any] = {\"__module__\": origin.__module__}\nbases = (origin,)\nmeta, ns, kwds = prepare_class(model_name, bases)\nnamespace.update(ns)\ncreated_model = meta(model_name, bases, namespace, ...)\n```\n\n`__slots__` is never copied from `origin` into `namespace`, so the synthesized class is declared without it.\n\n## Suggested fix\n\n```python\nnamespace: dict[str, Any] = {\"__module__\": origin.__module__}\nif \"__slots__\" in origin.__dict__:\n    namespace[\"__slots__\"] = origin.__slots__\n```\n\nThis propagates the origin's slot declaration to every parameterization. Models that intentionally omit `__slots__` are unaffected. Models that declare `__slots__` (including the common `__slots__ = ()` to drop `__weakref__`) get the behavior they asked for on `Model[X]` as well as on `Model`.\n\n## Workaround\n\nReplace the runtime generic with a `typing.Protocol[T]` and have each concrete envelope inherit `BaseModel` directly. The Protocol parameterization is typing-only, so no intermediate class is synthesized and the concrete classes' `__slots__ = ()` is respected. Costs the parent's shared fields in duplication across concrete subclasses.\n\n## Versions\n\n- pydantic 2.13.4\n- Python 3.13",
+      "expected": {
+        "can_fix": true
+      },
+      "meta": {
+        "linked_pr": 13243,
+        "reference_diff": "diff --git a/pydantic/_internal/_generics.py b/pydantic/_internal/_generics.py\n@@ -121,6 +121,19 @@ def create_generic_submodel(\n         The created submodel.\n     \"\"\"\n     namespace: dict[str, Any] = {'__module__': origin.__module__}\n+    # As per https://docs.python.org/3/reference/datamodel.html#slots:\n+    # \"The action of a __slots__ declaration is not limited to the class where it is defined.\n+    # __slots__ declared in parents are available in child classes. However, instances of a\n+    # child subclass will get a __dict__ and __weakref__ unless the subclass also defines\n+    # __slots__\".\n+    # Because when users parameterize a generic model, we create a subclass of such generic model\n+    # (what happens in this function), they can't control the fact that no slots is defined on the\n+    # dynamic subclass, and so even if they defined extra __slots__ on the generic class (which results\n+    # in the class *not* being weakref-able), the parameterized class *will* be weakref-able.\n+    # For this reason (and to make Pydantic generic models behavior closer to generic aliases),\n+    # we forward any slots from the origin:\n+    if '__slots__' in origin.__dict__:\n+        namespace['__slots__'] = origin.__dict__['__slots__']\n     bases = (origin,)\n     meta, ns, kwds = prepare_class(model_name, bases)\n     namespace.update(ns)\n@@ -141,7 +154,7 @@ def create_generic_submodel(\n     if called_globally:  # create global reference and therefore allow pickling\n         object_by_reference = None\n         reference_name = model_name\n-        reference_module_globals = sys.modules[created_model.__module__].__dict__\n+        reference_module_globals = sys.modules[model_module or created_model.__module__].__dict__\n         while object_by_reference is not created_model:\n             object_by_reference = reference_module_globals.setdefault(reference_name, created_model)\n             reference_name += '_'\ndiff --git a/tests/test_generics.py b/tests/test_generics.py\n@@ -4,6 +4,7 @@\n import platform\n import re\n import sys\n+import weakref\n from collections import Counter, OrderedDict, defaultdict, deque\n from collections.abc import Callable, Iterable, Mapping, Sequence\n from enum import Enum, IntEnum\n@@ -3178,3 +3179,21 @@ class Holder(BaseModel, Generic[T]):\n     holder2 = Holder(inner=Inner(inner=1))\n     # implies that validation succeeds for both\n     assert holder1 == holder2\n+\n+\n+def test_slots_forwarded_from_generic_class() -> None:\n+    \"\"\"https://github.com/pydantic/pydantic/issues/13215\"\"\"\n+\n+    T = TypeVar('T')\n+\n+    class Base(BaseModel, Generic[T]):\n+        __slots__ = ()\n+\n+    BaseInt = Base[int]\n+\n+    assert BaseInt.__dict__['__slots__'] == ()\n+\n+    if platform.python_implementation() != 'PyPy':\n+        with pytest.raises(TypeError):\n+            # As per https://docs.python.org/3/reference/datamodel.html#slots:\n+            weakref.ref(BaseInt())"
+      }
+    },
+    {
+      "id": "dup-13310",
+      "kind": "duplicate",
+      "source_repo": "pydantic/pydantic",
+      "issue_id": 13310,
+      "input_text": "TITLE: Security Risk: `pickle.loads()` Deserialization in Deprecated Pydantic Parsing\n\nBODY:\nA potential security vulnerability exists within the deprecated parsing functions in `pydantic/deprecated/parse.py`. Specifically, the `pickle.loads()` method is invoked when `allow_pickle=True` is provided to `load_str_bytes()` or `load_file()`. This allows for deserialization of untrusted data, presenting a significant arbitrary code execution (RCE) risk.\n\nThe problematic code segment is located at `pydantic/deprecated/parse.py:55`:\n```python\nelif proto == Protocol.pickle:\n    if not allow_pickle:\n        raise RuntimeError('Trying to decode with pickle with allow_pickle=False')\n    bb = b if isinstance(b, bytes) else b.encode()\n    return pickle.loads(bb)  # \u2190 unsafe on untrusted input\n```\n\nThe `load_file()` function (line 76) automatically selects `Protocol.pickle` for files with a `.pkl` extension, irrespective of the `allow_pickle` setting. Consequently, any application that uses `load_file()` with `allow_pickle=True` to process files from an attacker-controlled path could be exploited for arbitrary code execution via the `pickle.loads()` call.\n\nThis issue is particularly concerning in environments like AI data pipelines (e.g., LangChain, Pydantic AI, FastAPI) where Pydantic is utilized for data modeling and `.pkl` files are commonly used for cached artifacts.\n\nDespite these functions being marked with `@deprecated`, the unsafe pickle deserialization path remains fully accessible. This constitutes a CWE-502 (Deserialization of Untrusted Data) vulnerability, as the deprecation warning does not prevent the execution of the dangerous operation. Callers are vulnerable to RCE if they deserialize untrusted input with `allow_pickle=True`.",
+      "expected": {
+        "is_duplicate": true,
+        "duplicate_of": 13310
+      },
+      "meta": {
+        "method": "synthetic_paraphrase",
+        "original_title": "Deprecation cleanup: remove pickle.loads() from pydantic/deprecated/parse.py"
+      }
+    },
+    {
+      "id": "distinct-13214",
+      "kind": "distinct",
+      "source_repo": "pydantic/pydantic",
+      "issue_id": 13214,
+      "input_text": "Support field definitions in `create_model()` for Mypy plugin\n\n### Initial Checks\n\n- [x] I confirm that I'm using Pydantic V2\n\n### Description\n\nIn [this PR](https://github.com/pydantic/pydantic/pull/12879), dynamic types were added so as to make mypy checks pass. However, when creating a new model with some extra field definitions:\n```\nnew_fields: dict[str, Any] = {\"parameter_1\": (int, ...), \"parameter_2\": (str, None)}\n\nMyNewModel = create_model(\n    f\"MyNewModelName\",\n    __base__=MyBaseCass,\n    __module__=MyBaseCass.__module__,\n    **new_fields,\n)\n```\n\nand trying to access these attributes after instantiation:\n\n```\nmy_new_model = MyNewModel(parameter_1=1)\n_ = my_new_model.parameter_1\n```\nmypy yields errors:\n\n```\nUnexpected keyword argument \"parameter_1\" for \"MyNewModel\"  [call-arg]\nerror: \"MyNewModel\" has no attribute \"parameter_1\"  [attr-defined]\n```\n\n### Example Code\n\n```Python\n\n```\n\n### Python, Pydantic & OS Version\n\n```Text\npydantic version: 2.13.4\n        pydantic-core version: 2.46.4\n          pydantic-core build: profile=release pgo=false\n               python version: 3.11.14 (main, Oct 14 2025, 21:26:53) [Clang 20.1.4 ]\n                     platform: Linux-5.15.167.4-microsoft-standard-WSL2-x86_64-with-glibc2.35\n             related packages: mypy-1.20.2 pydantic-settings-2.8.1 fastapi-0.135.1 typing_extensions-4.15.0 pydantic-extra-types-2.11.0\n                       commit: unknown\n```",
+      "expected": {
+        "is_duplicate": false,
+        "duplicate_of": null
+      },
+      "meta": {
+        "method": "held_out",
+        "nearest_non_self_cosine": 0.7018
+      }
+    },
+    {
+      "id": "sev-rust-158371",
+      "kind": "severity",
+      "source_repo": "rust-lang/rust",
+      "issue_id": 158371,
+      "input_text": "rustfmt does not discover modules through `cfg_select!`\n\nIn case this issue is a better fit for the rustfmt repo, feel free to move it there. Also, if this is not a good fit for the regression tag, please change it.\n\nGiven this `lib.rs` and corresponding module files:\n\n```rust\ncfg_match! {\n    target_family = \"unix\" => {\n        mod format_me_please_1;\n    }\n    _ => {\n        mod format_me_please_2;\n    }\n}\n```\n\nWhen formatting this, everything is fine:\n\n```console\n$ rustfmt src/lib.rs --verbose\nFormatting src/format_me_please_1.rs\nFormatting src/format_me_please_2.rs\nFormatting src/lib.rs\nSpent 0.004 secs in the parsing phase, and 0.002 secs in the formatting phase\n```\n\nSupport for detecting module files through `cfg_match!` was addded in https://github.com/rust-lang/rustfmt/pull/6522. But `cfg_match!` was renamed to `cfg_select!` in https://github.com/rust-lang/rust/pull/137198, and if you change the code above to say `cfg_select!`, it no longer detects the module files:\n\n```console\n$ rustfmt src/lib.rs --verbose\nFormatting src/lib.rs\nSpent 0.002 secs in the parsing phase, and 0.001 secs in the formatting phase\n```\n\nSo anyone who has used `cfg_select!` to define modules in other files has possibly unformatted files. This is especially relevant due to the recent stabilization of `cfg_select!` (https://github.com/rust-lang/rust/pull/149783) the migration from `cfg_if!` to `cfg_select!` in the ecosystem (e.g., https://github.com/rust-lang/compiler-builtins/pull/1224).\n\nhttps://github.com/rust-lang/rust/pull/154202 does not appear to fix this issue. Renaming the corresponding occurrences in rustfmt fixes the issue for me, so I have opened https://github.com/rust-lang/rust/pull/158372.",
+      "expected": {
+        "severity": "medium"
+      },
+      "meta": {
+        "priority_label": "P-medium"
+      }
+    },
+    {
+      "id": "fix-13161",
+      "kind": "fix",
+      "source_repo": "pydantic/pydantic",
+      "issue_id": 13161,
+      "input_text": "Usage of validation_alias with AliasChoices with Mypy gives explicit-any error\n\n### Initial Checks\n\n- [x] I confirm that I'm using Pydantic V2\n\n### Description\n\nI've recently tried to bump pydantic version in a project from `2.10.6` to `2.13.4` and it introduced mypy errors related to the usage of an `AliasChoices` as a validation_alias in a  field of a`BaseModel`.\n\n### current mypy config:\n```ini\n[mypy]\nplugins = pydantic.mypy\ndisallow_any_explicit = true\nstrict = true\n\n[pydantic-mypy]\ninit_forbid_extra = true\ninit_typed = true\nwarn_required_dynamic_aliases = false\n```\n\n### Tests\nI've then tested different minor versions to check which one introduced this change, and apparently the next version, `2.11.0a1`, introduced this behavior.\n\nTesting in the example code, we get the following error:\n```\ntest.py:6: error: Explicit \"Any\" is not allowed  [explicit-any]\n```\nThis seems to indicate that it affects the type checking of the class, and not the typing of the `AliasChoices` itself.\n\n### Questions:\n1. Is this is a missing configuration on my part?\n1. Is there another way to use validation_alias with multiple options that are properly typed for mypy?\n\n## Related documentation\nI've read the documentation about [warn_required_dynamic_aliases](https://pydantic.dev/docs/validation/latest/integrations/dev-tools/mypy/#warn_required_dynamic_aliases) as well which seemed to indicate that the pydantic mypy plugin was properly configured.\n\n### Example Code\n\n```Python\nfrom pydantic import AliasChoices, BaseModel, Field\n\nvalidation_alias_choices = AliasChoices(\"choice\", \"other_choice\")\n\n\nclass ModelWithMypyError(BaseModel):\n    test_field: str = Field(validation_alias=validation_alias_choices)\n\n\nclass WorkingModel(BaseModel):\n    test_field: str = Field(validation_alias=\"choice\")\n```\n\n### Python, Pydantic & OS Version\n\n```Text\npydantic version: 2.13.4\n        pydantic-core version: 2.46.4\n          pydantic-core build: profile=release pgo=false\n               python version: 3.12.11 (main, Jun 25 2025, 09:57:49) [Clang 16.0.0 (clang-1600.0.26.6)]\n                     platform: macOS-26.3.1-arm64-arm-64bit\n             related packages: mypy-1.20.2 typing_extensions-4.15.0\n                       commit: unknown\n```",
+      "expected": {
+        "can_fix": true
+      },
+      "meta": {
+        "linked_pr": 13196,
+        "reference_diff": "diff --git a/docs/integrations/mypy.md b/docs/integrations/mypy.md\n@@ -161,6 +161,8 @@ A configuration file with all plugin strictness flags enabled (and some other my\n \n ### `init_typed`\n \n+**Default**: `False`.\n+\n Because Pydantic performs [data conversion](../concepts/models.md#data-conversion) by default, the following is still valid at runtime:\n \n ```python {test=\"skip\" lint=\"skip\"}\n@@ -171,11 +173,13 @@ class Model(BaseModel):\n Model(a='1')\n ```\n \n-For this reason, the plugin will use [`Any`][typing.Any] for field annotations when synthesizing the `__init__` method,\n+For this reason, the plugin will use [`Any`][typing.Any] for field annotations when synthesizing the `__init__()` method,\n unless `init_typed` is set or [strict mode](../concepts/strict_mode.md) is enabled on the model.\n \n ### `init_forbid_extra`\n \n+**Default**: `False`.\n+\n By default, Pydantic allows (and ignores) any extra provided argument:\n \n ```python {test=\"skip\" lint=\"skip\"}\n@@ -186,17 +190,14 @@ class Model(BaseModel):\n Model(unrelated=2)\n ```\n \n-For this reason, the plugin will add an extra `**kwargs: Any` parameter when synthesizing the `__init__` method, unless\n-`init_forbid_extra` is set or the [`extra`][pydantic.ConfigDict.extra] is set to `'forbid'`.\n+For this reason, the plugin will add an extra `**kwargs: Any` parameter when synthesizing the `__init__()` method, unless\n+`init_forbid_extra` is set or the [`extra`][pydantic.ConfigDict.extra] configuration value is set to `'forbid'`.\n \n ### `warn_required_dynamic_aliases`\n \n+**Default**: `False`.\n+\n Whether to error when using a dynamically-determined alias or alias generator on a model with\n [`validate_by_name`][pydantic.ConfigDict.validate_by_name] set to `False`. If such aliases are\n-present, mypy cannot properly type check calls to `__init__`. In this case, it will default to\n-treating all arguments as not required.\n-\n-!!! note \"Compatibility with `Any` being disallowed\"\n-    Some mypy configuration options (such as [`disallow_any_explicit`](https://mypy.readthedocs.io/en/stable/config_file.html#confval-disallow_any_explicit))\n-    will error because the synthesized `__init__` method contains [`Any`][typing.Any] annotations. To circumvent the issue, you will have\n-    to enable both `init_forbid_extra` and `init_typed`.\n+present, mypy cannot properly type check calls to `__init__()`. In this case, it will default to\n+treating all arguments as not required, by synthesizing the `__init__()`\u00a0as `(**kwargs: Any) -> None`.\ndiff --git a/pydantic/mypy.py b/pydantic/mypy.py\n@@ -345,7 +345,7 @@ def to_argument(\n         if typed or strict:\n             type_annotation = self.expand_type(current_info, api, include_root_type=True)\n         else:\n-            type_annotation = AnyType(TypeOfAny.explicit)\n+            type_annotation = AnyType(TypeOfAny.special_form)\n \n         return Argument(\n             variable=variable,\n@@ -952,7 +952,7 @@ def add_initializer(\n \n         if not self.should_init_forbid_extra(fields, config):\n             var = Var('kwargs')\n-            args.append(Argument(var, AnyType(TypeOfAny.explicit), None, ARG_STAR2))\n+            args.append(Argument(var, AnyType(TypeOfAny.special_form), None, ARG_STAR2))\n \n         add_method(self._api, self._cls, '__init__', args=args, return_type=NoneType())\n \n@@ -983,7 +983,7 @@ def add_model_construct_method(\n             )\n         if not self.should_init_forbid_extra(fields, config):\n             var = Var('kwargs')\n-            args.append(Argument(var, AnyType(TypeOfAny.explicit), None, ARG_STAR2))\n+            args.append(Argument(var, AnyType(TypeOfAny.special_form), None, ARG_STAR2))\n \n         args = args + [fields_set_argument] if is_root_model else [fields_set_argument] + args\n \ndiff --git a/tests/mypy/modules/plugin_no_any_dynamic_alias.py b/tests/mypy/modules/plugin_no_any_dynamic_alias.py\n@@ -0,0 +1,7 @@\n+\"\"\"Asserts that no explicit Any error is raised when using dynamic aliases (which results in constructors being synthesized as `(**kwargs: Any) -> None`).\"\"\"\n+\n+from pydantic import AliasChoices, BaseModel, Field\n+\n+\n+class ModelWithAliasChoices(BaseModel):\n+    test_field: str = Field(default='', validation_alias=AliasChoices('choice', 'other_choice'))\ndiff --git a/tests/mypy/outputs/mypy-plugin-strict-no-any_ini/plugin_no_any_dynamic_alias.py b/tests/mypy/outputs/mypy-plugin-strict-no-any_ini/plugin_no_any_dynamic_alias.py\n@@ -0,0 +1,8 @@\n+\"\"\"Asserts that no explicit Any error is raised when using dynamic aliases (which results in constructors being synthesized as `(**kwargs: Any) -> None`).\"\"\"\n+\n+from pydantic import AliasChoices, BaseModel, Field\n+\n+\n+class ModelWithAliasChoices(BaseModel):\n+    test_field: str = Field(default='', validation_alias=AliasChoices('choice', 'other_choice'))\n+# MYPY: error: Required dynamic aliases disallowed  [pydantic-alias]\ndiff --git a/tests/mypy/test_mypy.py b/tests/mypy/test_mypy.py\n@@ -111,6 +111,7 @@ def build_cases(\n         ('mypy-plugin.ini', 'final_with_default.py'),\n         ('mypy-plugin.ini', 'create_model_var.py'),\n         ('mypy-plugin-strict-no-any.ini', 'dataclass_no_any.py'),\n+        ('mypy-plugin-strict-no-any.ini', 'plugin_no_any_dynamic_alias.py'),\n         ('mypy-plugin-very-strict.ini', 'metaclass_args.py'),\n         ('pyproject-plugin-no-strict-optional.toml', 'no_strict_optional.py'),\n         ('pyproject-plugin-strict-equality.toml', 'strict_equality.py'),"
+      }
+    },
+    {
+      "id": "dup-13300",
+      "kind": "duplicate",
+      "source_repo": "pydantic/pydantic",
+      "issue_id": 13300,
+      "input_text": "TITLE: TypeError when passing custom keyword arguments to `__pydantic_init_subclass__`\n\nBODY:\nI'm encountering an issue with Pydantic V2 where custom keyword arguments provided during class definition are not being correctly handled by `__pydantic_init_subclass__`.\n\nThe documentation suggests that `__pydantic_init_subclass__` should accept the same keyword arguments as the standard `__init_subclass__`. However, when I define a class like `class MyClass(BaseClass, custom_arg='value')` and override `__pydantic_init_subclass__` to accept `custom_arg`, I receive a `TypeError`.\n\nIt appears that the `ModelMetaclass.__new__` method passes all keyword arguments to the parent class's `__new__` first. This triggers the standard `__init_subclass__` in the inheritance chain. If no method in the chain consumes the custom keyword argument (like `event_type` in the example), the default `object.__init_subclass__` raises an error because it doesn't expect extra arguments.\n\nThe current workaround involves adding a dummy `__init_subclass__` method to absorb these arguments, but this complicates type checking.\n\nMy expectation is that overriding `__pydantic_init_subclass__` should be sufficient to handle custom class-level keyword arguments without needing a separate `__init_subclass__` definition. Alternatively, the documentation could be updated to clarify that `__pydantic_init_subclass__` is not a direct replacement and that custom arguments will require explicit handling via `__init_subclass__`.\n\n**Example:**\n\n```python\nfrom pydantic import BaseModel\nfrom typing import override\n\nclass Event(BaseModel):\n    e_type: str\n\n    # The commented-out __init_subclass__ is the workaround\n    # @classmethod\n    # def __init_subclass__(cls, event_type: str | None = None, **kwargs: object) -> None:\n    #     super().__init_subclass__(**kwargs)\n\n    @override\n    @classmethod\n    def __pydantic_init_subclass__(cls, event_type: str | None = None, **kwargs: object) -> None:\n        super().__pydantic_init_subclass__(**kwargs)\n        print(f\"registered: {event_type}\")\n\nclass CreatedEvent(Event, event_type='created'): ...\n```\n\nThis code results in the following error:\n`TypeError: CreatedEvent.__init_subclass__() takes no keyword arguments`\n\n**Environment:**\n- Pydantic: 2.13.4\n- Python: 3.13",
+      "expected": {
+        "is_duplicate": true,
+        "duplicate_of": 13300
+      },
+      "meta": {
+        "method": "synthetic_paraphrase",
+        "original_title": "`__pydantic_init_subclass__` cannot receive custom class keyword arguments without also defining `__init_subclass__`"
+      }
+    },
+    {
+      "id": "distinct-13139",
+      "kind": "distinct",
+      "source_repo": "pydantic/pydantic",
+      "issue_id": 13139,
+      "input_text": "Sub-classing from BaseModel failes with python 3.15 -X lazy_imports=all\n\n### Initial Checks\n\n- [x] I confirm that I'm using Pydantic V2\n\n### Description\n\nWhen launching `python3.15 -X lazy_imports=all` it is not possible to create a simple class. This could possibly be a Python bug.\n\n```\n>>> class Point(pydantic.BaseModel):\n...     x: int\n...     y: int\n...     \nTraceback (most recent call last):\n  File \"<python-input-1>\", line 1, in <module>\n    import pydantic\nImportError: deferred import of 'pydantic' raised an exception during resolution\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"<python-input-2>\", line 1, in <module>\n    class Blah(pydantic.BaseModel):\n               ^^^^^^^^\n  File \"/home/chaz/venv/lib/python3.15/site-packages/pydantic/__init__.py\", line 8, in <module>\n    _ensure_pydantic_core_version()\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/chaz/venv/lib/python3.15/site-packages/pydantic/version.py\", line 83, in _ensure_pydantic_core_version\n    if not check_pydantic_core_version():\n           ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/chaz/venv/lib/python3.15/site-packages/pydantic/version.py\", line 79, in check_pydantic_core_version\n    return __pydantic_core_version__ == _COMPATIBLE_PYDANTIC_CORE_VERSION\n           ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/chaz/venv/lib/python3.15/site-packages/pydantic_core/__init__.py\", line 148, in <module>\n    MISSING = Sentinel('MISSING')\n              ^^^^^^^^\n  File \"/home/chaz/venv/lib/python3.15/site-packages/typing_extensions.py\", line 4311, in <module>\n    {name: getattr(typing, name) for name in _typing_names if hasattr(typing, name)}\n                                                              ~~~~~~~^^^^^^^^^^^^^^\nImportError: cannot import name 'Match' from 'typing' (/home/chaz/.local/local/python-3.15.0a8/lib/python3.15/typing.py)\n```\n\n### Example Code\n\n```Python\nimport pydantic\n\nclass Point(pydantic.BaseModel)\n  x: int\n  y: int\n```\n\n### Python, Pydantic & OS Version\n\n```Text\npydantic version: 2.13.3\n        pydantic-core version: 2.46.3\n          pydantic-core build: profile=release pgo=false\n               python version: 3.15.0a8 (main, Apr  9 2026, 09:20:28) [Clang 21.1.8 ]\n                     platform: Linux-6.12.0-124.47.1.el10_1.x86_64_v2-x86_64-with-glibc2.39\n             related packages: typing_extensions-4.15.0\n                       commit: unknown\n```",
+      "expected": {
+        "is_duplicate": false,
+        "duplicate_of": null
+      },
+      "meta": {
+        "method": "held_out",
+        "nearest_non_self_cosine": 0.6983
+      }
+    },
+    {
+      "id": "sev-rust-157316",
+      "kind": "severity",
+      "source_repo": "rust-lang/rust",
+      "issue_id": 157316,
+      "input_text": "implied bound related unsoundness\n\n<!--\nThank you for filing a bug report! \ud83d\udc1b Please provide a short summary of the bug,\nalong with any information you feel relevant to replicating the bug.\n-->\n\nThis is almost identical to the [unsound example test case](https://github.com/rust-lang/rust/blob/4f84d9fac456d973d592cf3fb48db958ecf22506/tests/ui/implied-bounds/implied-bounds-on-nested-references-plus-variance-2.rs) for issue-25860. The difference is that this variant only began compiling successfully since `nightly-2020-06-24`, whereas the existing known unsoundness already compiles since nightly-2015-02-18 (rustc 1.0.0).\n\nI tried this code:\n\n```rust\nstatic UNIT: &'static &'static () = &&();\n\nfn foo<'a, 'b, T>(_: &'a &'b (), v: &'b T) -> &'a T { v }\n\nfn bad<'a, T>(x: &'a T) -> &'static T {\n    let f: fn(_, &T) -> &'static T = foo;\n    f(UNIT, x)\n}\n\nfn main() {\n    let r: &'static String;\n    {\n        let s = String::from(\"temporary\");\n        r = bad(&s);\n        println!(\"while alive: {}\", r);\n    }\n    println!(\"use-after-free reads: {}\", r);\n}\n```\n\nThe only difference from that test case is the number of parameters and arguments in `foo`.\nFor reference:\nhttps://github.com/rust-lang/rust/blob/4f84d9fac456d973d592cf3fb48db958ecf22506/tests/ui/implied-bounds/implied-bounds-on-nested-references-plus-variance-2.rs#L6-L11\n\nI expected to see this happen: compilation should fail\n\nInstead, this happened: the program compiled and produced the following use-after-free output:\n```\nwhile alive: temporary\nuse-after-free reads: j\ufffd\ufffd;g\n```\n\n### Meta\n<!--\nIf you're using the stable version of the compiler, you should also check if the\nbug also exists in the beta or nightly versions.\n-->\n\n`rustc --version --verbose`:\n```\nrustc 1.98.0-nightly (6bdf43094 2026-06-01)\nbinary: rustc\ncommit-hash: 6bdf43094fae65d298bc430362f116176cd25a3c\ncommit-date: 2026-06-01\nhost: x86_64-unknown-linux-gnu\nrelease: 1.98.0-nightly\nLLVM version: 22.1.6\n```\n\n### Bisection Results\nCommand: `cargo bisect-rustc --start=2018-01-01 --end=2020-06-30 --regress=success --preserve --script rustc -- bug.rs`\n\nRegression in: `nightly-2020-06-24`.\n\n<details><summary>Log</summary>\n<p>\n\n```\nsearched toolchains nightly-2018-01-01 through nightly-2020-06-30\n\n\n********************************************************************************\nRegression in nightly-2020-06-24\n********************************************************************************\n\nfetching https://static.rust-lang.org/dist/2020-06-23/channel-rust-nightly-git-commit-hash.txt\nnightly manifest 2020-06-23: 40 B / 40 B [==============================================================================================================================================] 100.00 % 1.40 MB/s converted 2020-06-23 to 6bb3dbfc6c6d8992d08431f320ba296a0c2f7498\nfetching https://static.rust-lang.org/dist/2020-06-24/channel-rust-nightly-git-commit-hash.txt\nnightly manifest 2020-06-24: 40 B / 40 B [==============================================================================================================================================] 100.00 % 2.07 MB/s converted 2020-06-24 to ff5b446d2fdbd898bc97a751f2f72858de185cf1\nlooking for regression commit between 2020-06-23 and 2020-06-24\nfetching (via remote github) commits from max(6bb3dbfc6c6d8992d08431f320ba296a0c2f7498, 2020-06-21) to ff5b446d2fdbd898bc97a751f2f72858de185cf1\nending github query because we found starting sha: 6bb3dbfc6c6d8992d08431f320ba296a0c2f7498\nget_commits_between returning commits, len: 6\n  commit[0] 2020-06-22: Auto merge of #73415 - ehuss:update-cargo, r=ehuss\n  commit[1] 2020-06-22: Auto merge of #73594 - Aaron1011:revert/move-fn-self-msg, r=Manishearth\n  commit[2] 2020-06-23: Auto merge of #73007 - yoshuawuyts:socketaddr-from-string-u16, r=sfackler\n  commit[3] 2020-06-23: Auto merge of #73635 - Dylan-DPC:rollup-b4wbp42, r=Dylan-DPC\n  commit[4] 2020-06-23: Auto merge of #73643 - Manishearth:rollup-68dr8fz, r=Manishearth\n  commit[5] 2020-06-23: Auto merge of #73644 - \n\u2026[truncated]",
+      "expected": {
+        "severity": "medium"
+      },
+      "meta": {
+        "priority_label": "P-medium"
+      }
+    },
+    {
+      "id": "fix-13148",
+      "kind": "fix",
+      "source_repo": "pydantic/pydantic",
+      "issue_id": 13148,
+      "input_text": "Is `warn_untyped_fields` no longer recommended for the Mypy plugin?\n\nSeems like we should document `warn_untyped_fields`, and possibly validate the config:\n\n### Discussed in https://github.com/pydantic/pydantic/discussions/13130\n\n<div type='discussions-op-text'>\n\n<sup>Originally posted by **johnthagen** April 30, 2026</sup>\nI used to for all of my projects using Pydantic enable:\n\n```toml\n[tool.pydantic-mypy]\ninit_forbid_extra = true\ninit_typed = true\nwarn_required_dynamic_aliases = true\nwarn_untyped_fields = true\n```\n\nBut I checked the docs at \n\n- https://pydantic.dev/docs/validation/latest/integrations/dev-tools/mypy/#configuring-the-plugin\n\n> A configuration file with all plugin strictness flags enabled\n\n```toml\n[tool.pydantic-mypy]\ninit_forbid_extra = true\ninit_typed = true\nwarn_required_dynamic_aliases = true\n```\n\nThis flag is not recommended there even thought it says \"all plugin strictness flags\". Was this flag removed at some point (I was unable to find a reference to this searching the issues and PRs).\n\nDoes `warn_untyped_fields` still do anything?\n\nIt looks like extra keys are ignore:\n\n```toml\n[tool.pydantic-mypy]\ninit_forbid_extra = true\ninit_typed = true\nwarn_required_dynamic_aliases = true\naaa = true\n```\n\nShould the Mypy plugin validate that the user is only using expected keys? </div>",
+      "expected": {
+        "can_fix": true
+      },
+      "meta": {
+        "linked_pr": 13149,
+        "reference_diff": "diff --git a/pydantic/mypy.py b/pydantic/mypy.py\n@@ -262,12 +262,22 @@ def __init__(self, options: Options) -> None:\n                 if not isinstance(setting, bool):\n                     raise ValueError(f'Configuration value must be a boolean for key: {key}')\n                 setattr(self, key, setting)\n+            unknown_keys = config.keys() - set(self.__slots__)\n+            for key in sorted(unknown_keys):\n+                print(f'[pydantic-mypy]: Unrecognized option: {key} = {config[key]}', file=sys.stderr)  # noqa: T201\n         else:\n             plugin_config = ConfigParser()\n             plugin_config.read(options.config_file)\n             for key in self.__slots__:\n                 setting = plugin_config.getboolean(CONFIGFILE_KEY, key, fallback=False)\n                 setattr(self, key, setting)\n+            if plugin_config.has_section(CONFIGFILE_KEY):\n+                unknown_keys = set(plugin_config.options(CONFIGFILE_KEY)) - set(self.__slots__)\n+                for key in sorted(unknown_keys):\n+                    print(  # noqa: T201\n+                        f'[pydantic-mypy]: Unrecognized option: {key} = {plugin_config.get(CONFIGFILE_KEY, key)}',\n+                        file=sys.stderr,\n+                    )\n \n     def to_data(self) -> dict[str, Any]:\n         \"\"\"Returns a dict of config names to their values.\"\"\"\ndiff --git a/tests/mypy/configs/mypy-plugin-unknown-param.ini b/tests/mypy/configs/mypy-plugin-unknown-param.ini\n@@ -0,0 +1,20 @@\n+[mypy]\n+plugins = pydantic.mypy\n+\n+follow_imports = silent\n+strict_optional = True\n+warn_redundant_casts = True\n+warn_unused_ignores = True\n+disallow_any_generics = True\n+check_untyped_defs = True\n+no_implicit_reexport = True\n+disallow_untyped_defs = True\n+\n+python_version = 3.10\n+\n+[pydantic-mypy]\n+init_forbid_extra = True\n+warn_untyped_fields = True\n+\n+[mypy-pydantic_core.*]\n+follow_imports = skip\ndiff --git a/tests/mypy/configs/mypy-plugin-very-strict.ini b/tests/mypy/configs/mypy-plugin-very-strict.ini\n@@ -9,4 +9,3 @@ python_version = 3.10\n init_forbid_extra = True\n init_typed = True\n warn_required_dynamic_aliases = True\n-warn_untyped_fields = True\ndiff --git a/tests/mypy/configs/pyproject-plugin-unknown-param.toml b/tests/mypy/configs/pyproject-plugin-unknown-param.toml\n@@ -0,0 +1,42 @@\n+[build-system]\n+requires = [\"poetry>=0.12\"]\n+build_backend = \"poetry.masonry.api\"\n+\n+[tool.poetry]\n+name = \"test\"\n+version = \"0.0.1\"\n+readme = \"README.md\"\n+authors = [\n+    \"author@example.com\"\n+]\n+\n+[tool.poetry.dependencies]\n+python = \"*\"\n+\n+[tool.pytest.ini_options]\n+addopts = \"-v -p no:warnings\"\n+\n+[tool.mypy]\n+plugins = [\n+    \"pydantic.mypy\"\n+]\n+follow_imports = \"silent\"\n+strict_optional = true\n+warn_redundant_casts = true\n+warn_unused_ignores = true\n+disallow_any_generics = true\n+check_untyped_defs = true\n+no_implicit_reexport = true\n+disallow_untyped_defs = true\n+\n+python_version = '3.10'\n+\n+[tool.pydantic-mypy]\n+init_forbid_extra = true\n+warn_untyped_fields = true  # unknown key, should trigger a warning\n+\n+[[tool.mypy.overrides]]\n+module = [\n+    'pydantic_core.*',\n+]\n+follow_imports = \"skip\"\ndiff --git a/tests/mypy/test_mypy.py b/tests/mypy/test_mypy.py\n@@ -197,6 +197,26 @@ def test_bad_toml_config() -> None:\n     assert str(e.value) == 'Configuration value must be a boolean for key: init_forbid_extra'\n \n \n+def test_unknown_toml_config_key(capsys: pytest.CaptureFixture[str]) -> None:\n+    full_config_filename = 'tests/mypy/configs/pyproject-plugin-unknown-param.toml'\n+    full_filename = 'tests/mypy/modules/generics.py'  # File doesn't matter\n+\n+    command = [full_filename, '--config-file', full_config_filename, '--show-error-codes']\n+    mypy_api.run(command)\n+    captured = capsys.readouterr()\n+    assert '[pydantic-mypy]: Unrecognized option: warn_untyped_fields = True' in captured.err\n+\n+\n+def test_unknown_ini_config_key(capsys: pytest.CaptureFixture[str]) -> None:\n+    full_config_filename = 'tests/mypy/configs/mypy-plugin-unknown-param.ini'\n+    full_filename = 'tests/mypy/modules/generics.py'  # File doesn't matter\n+\n+    command = [full_filename, '--config-file', full_config_filename, '--show-error-codes']\n+    mypy_api.run(command)\n+    captured = capsys.readouterr()\n+    assert '[pydantic-mypy]: Unrecognized option: warn_untyped_fields = True' in captured.err\n+\n+\n @pytest.mark.parametrize('module', ['dataclass_no_any', 'plugin_success', 'plugin_success_baseConfig'])\n def test_success_cases_run(module: str) -> None:\n     \"\"\""
+      }
+    },
+    {
+      "id": "sev-rust-157565",
+      "kind": "severity",
+      "source_repo": "rust-lang/rust",
+      "issue_id": 157565,
+      "input_text": "Rust 2015 type `dyn + dyn` wrongly rejected by the parser due to \"helpful\" diagnostic\n\nIn Rust 2015, `dyn` is only a *contextual* keyword. It is *only* meant to be active if it appears in a type context and is followed by a token in the following set: {*PathIdentSegment*, *LIFETIME_OR_LABEL*, `for`, `(`, `?`} as dictated by [`can_begin_dyn_bound_in_edition_2015`](https://github.com/rust-lang/rust/blob/83adf7e080d0fe4f0970c00eac2976a767dbd042/compiler/rustc_parse/src/parser/ty.rs#L88-L103) (cc https://github.com/rust-lang/reference/pull/2257) (side note: [RFC 2113](https://rust-lang.github.io/rfcs/2113-dyn-trait-syntax.html) doesn't actually define the rules).\n\nDespite that fact, since 1.54 rustc rejects the following Rust 2015 program:\n\n```rs\n#[cfg(false)]\ntype X = dyn + dyn;\n```\n\n```\nerror: invalid `dyn` keyword\n --> src/lib.rs:2:16\n  |\n2 | type X = dyn + dyn;\n  |                ^^^\n  |\n  = help: `dyn` is only needed at the start of a trait `+`-separated list\nhelp: remove this keyword\n  |\n2 - type X = dyn + dyn;\n2 + type X = dyn + ;\n  |\n\nerror: expected identifier, found `;`\n --> src/lib.rs:2:19\n  |\n2 | type X = dyn + dyn;\n  |                   ^ expected identifier\n```\n\nMore concretely, rustc erroneously rejects this code since PR #84896 which only meant to improve diagnostics, not alter the stable grammar of Rust.\n\nNote that `dyn + dyn` *can* be semantically well-formed, too (assuming this parser bug has been fixed). Consider the following contrived Rust 2015 code:\n\n```rs\nuse std::marker::Sync as dyn;\ntype Y = dyn + dyn;\n```\n\n<!-- TRIAGEBOT_START -->\n\n<!-- TRIAGEBOT_ASSIGN_START -->\n\n<!-- TRIAGEBOT_ASSIGN_END -->\n<!-- TRIAGEBOT_END -->",
+      "expected": {
+        "severity": "low"
+      },
+      "meta": {
+        "priority_label": "P-low"
+      }
+    },
+    {
+      "id": "sev-rust-157337",
+      "kind": "severity",
+      "source_repo": "rust-lang/rust",
+      "issue_id": 157337,
+      "input_text": "Incrementing &mut Option<u32> generates verbose instructions 1.94.0 -> 1.95.0\n\n### Code\n[[Godbolt Link](https://godbolt.org/#z:OYLghAFBqd5TKALEBjA9gWwA4EsA2ApgE4A0uIEGOBJIxAjAJwAsADKQGYEAuJAzpQBGIAORtRpIbgB2AQ2IBPMQ0nT5SgPJCAVoVQ8Vk6pkIyemmfmXjJAE0JCArsADCc/PkGjVpB5jkZYCIxCT9cYn0eXAA3Qm8wwgAPfSc%2BUMlZPnwM0nxcIWIFRVd0B1yeYlxMI1I44iF0fkIAEUIAoPygjIBKLnw5YH4ANVxCAHdNbDNaznRzAGVUD0IQBhYueZ4AVWaABSTcnRAAJjzA0GInfh48gsFIPvRsaPnvAFpXAGpnnneiOL4ACkAGYWiDJOh6lUHA8oPJTCBCHZcK8ZHUPE5VqITmwTixRD0%2Bs0iAZcPNKGY7KV8E5MDI1mcqQAZWSEABydKEdBBpGwTVR5JkNLpDIYZ35/EF81ZMg5XJ5pBJUSFCx4Ch4IvpjKVhFJaLVGtl8sw3OIIF5Nw1WrFZytxB4xs5pp5xPQTmIqFWDD6OVEAFZJAzbKR0GIvlcbqgvgwAHSsWNsL4QACiKJ46GIXyBJxBPskhlsfQgKF%2Be1w0y6hFGE3IlFE704MnQ7xR/GWxDs7ximMI7wR8VEuWoeCIxHZckRokjPGjcYTYX8FyI734ilN6C8uTsdOwjacnnemDKB%2BxvmRqMzuDsay4vBIrccLnesjmuW4%2BD4xBfMgwMmaACOWLmLgHjvNgcj8M03i%2BB%2BX4/jcVxkvMR6EOqdhyOq75bEsKxrBsczmLshAHEcpy6vqyIAOLEO62AgAA%2BkxnAUVEyIAJIyA4hwMCCABsSrXo4CgAOrXjwKAnP6HCVIQhDXiAbC%2BmIgakMGYRhqIUw8F85aVmyXw1uMJARtcs4xvGLCJsmaaXlmOZ5qQXylDQY7ZrmJw9AWvR9AA1iA0l5GIBJqbkmmSIIDCkIWEjFogJZoFgo4kHWVBJbQ5qMEwgVwQIwi5OoxS1IVWi6FEtQmGYFhWDYi5Pm4Hhbj49jtMu2KLhEKpxAkkjJKk6Qhlkeq5PkhTFKU5QhpU1S1PUjTNG0HTBLIoBFv0gwjGMkzTMGsE4csITrJsRH7IcIbHFFAzdDOdxCHCTwvEKHzfL8/yEICoLgpC0JCXCEADki6ZChitLYri%2BKEsSeoqhSEBUjat4smyzpmrekrSsKm6imjApok6CrmlFyrITIhoOgjRPQyTZOOsjBO3vampY9qRPqg6%2BMuoTboel6azKQGQZheGM5zvG/rWam6aZu5eZedFvSkAlZYVnqbJGalDZNi2bYdl2Pag/2k6DsO6VjhOU4ixZ2WJi1S0rmuG5NYuu77oex47iEzWkBeGYwreuXfg4zjAD%2Bb4hgHP5/oBwHRGBEFQfEsz3t%2BsiIU4JOoehmFyNhiwHd6BFbMRpHnQzVN8HYNF0YxzGsQYHFcckawgkwglB6J4mSYFsnyTeSlBQLoUhpp2m6SrVaGVtJmW/O4tJpLdky1FzmmyZDn5vLRZ9EghByA45oQH5AUcH6IU1AwbAcOpkJiBFt4xZDA8nJINQAOwgomfGXycTAnAAHFJV%2BfE/4CWvqGW%2Bm9YqK3iigDADhbK%2B1Sh%2BMwRtZj7TwkdQiOxTpkUuhcegZk65okpFxBGIImRcQ5qjCUuMhRkJoVKPGdNObkWJgaNmTNaTanIUQ1UHCqF0DtBw%2BhSp%2BHMOodzT02IHJAn9AAIScP%2BOQnBCD/XQAxO2hAeiyJaECNgABBbATghBfCbKYiAhx3J8UwGkL42khSglcE4choIUw9GzK/ORej9FfF8V8IgOkbE6UUNmMEXwABUSRQReIMX4r4ITPrxNjAEbAEAgSv3cOk74ch3JyJjNokEMSfF%2BMiaElo8TonePSS0QkA9VJgM0gAJTMl8fg7opFL28lvUgO8950EPgPM%2Bpw%2BLxhbkwV%2BbBX4MFfiwXMvFeQNIgYIGSPkB4QiHhpCBD8iR1AEEKEALAgA)] This is a follow-up to #149970 which, at the time of this writing, has not been resolved yet.\n\nSource:\n```rust\npub fn f(x: &mut Option<u32>) {\n    let mut y = *x;\n    y = y.map(|a| a + 1);\n    *x = y;\n}\n// OR\npub fn f(x: &mut Option<u32>) {\n    *x = x.map(|a| a + 1);\n}\n```\n\n1.94.0's more optimally generated assembly:\n```asm\nf:\n        inc     dword ptr [rdi + 4]\n        ret\n```\n\n1.95.0's less optimally generated assembly:\n```asm\nf:\n        mov     eax, dword ptr [rdi + 4]\n        inc     eax\n        mov     dword ptr [rdi + 4], eax\n        ret\n```\n\n### Author's Insights\n**Within the optimization pipeline, I noticed that the LLVM IR was the same up until the `X86 DAG->DAG Instruction Selection (x86-isel)` step. The Compiler Explorer link contains a pane to see this.**\n**Although not shown in Godbolt, the regression also exists for x86_32 (i686). See it with Overrides -> Target architecture -> i686-unknown-linux-gnu.**\n\n### Compilation Info\n```\nRust Edition: 2024\nFlags: -C opt-level=3\n```\n\n@rustbot modify labels: +regression-from-stable-to-stable +T-compiler +C-optimization +A-codegen +A-LLVM +E-needs-bisection +S-has-mcve +O-x86_64 +O-x86_32 -C-bug -regression-untriaged",
+      "expected": {
+        "severity": "low"
+      },
+      "meta": {
+        "priority_label": "P-low"
+      }
+    }
+  ]
+}
