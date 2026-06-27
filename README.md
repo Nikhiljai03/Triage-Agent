@@ -119,7 +119,7 @@ snippet in a throwaway Docker container locked down per `sandbox/policy.py`:
 **no network**, read-only rootfs, all Linux caps dropped, `no-new-privileges`,
 non-root user, CPU/memory/PID caps, a small writable tmpfs, a hard wall-clock
 timeout, and **guaranteed container removal**. A bug "reproduces" when the
-program exits non-zero and didn't time out. Not yet wired into the worker (Phase 4).
+program exits non-zero and didn't time out. (Used by the agent's reproduce step in Phase 4.)
 
 Requires a reachable Docker daemon (Docker-out-of-Docker via the host socket).
 
@@ -149,8 +149,10 @@ Built in 7 phases; each adds one real capability on top of a proven skeleton.
 - [x] **Phase 3 — Sandboxed reproduction.** Locked-down Docker runner (no net,
       read-only FS, dropped caps, non-root, CPU/mem/PID caps, hard timeout,
       guaranteed cleanup) that confirms whether a bug reproduces. Stands alone.
-- [ ] **Phase 4 — Agent orchestration.** LangGraph state machine: classify →
-      repro → decide.
+- [x] **Phase 4 — Agent orchestration.** LangGraph state machine (Gemini behind a
+      swappable adapter): duplicate-check → reproduce (sandbox) → severity →
+      retrieve fixes → draft fix / escalate. Records `propose_*` intended actions
+      only — **no GitHub writes** (those are Phase 5). Wired into the worker.
 - [ ] **Phase 5 — Fix drafting & safe writes.** Draft PRs for trivial bugs;
       dry-run / live-write guardrails.
 - [ ] **Phase 6 — Evaluation.** Triage-accuracy and reproduction-rate metrics.
