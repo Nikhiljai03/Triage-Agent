@@ -18,13 +18,13 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 
 from api.webhook import parse_issue_event, verify_signature
 from shared.config import settings
-from shared.queue import enqueue_triage
+from shared.queue import enqueue_reindex, enqueue_triage
 from shared.run_store import get_run_store
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -92,24 +92,17 @@ async def status_one(run_id: str) -> dict:
 
 
 @app.post("/reindex")
-async def reindex(background: BackgroundTasks) -> JSONResponse:
-    """Kick off RAG ingestion for the target repo in the background (non-blocking)."""
-    background.add_task(_run_reindex, settings.target_repo)
+async def reindex() -> JSONResponse:
+    """Enqueue a RAG reindex for the target repo (runs in the worker, non-blocking).
+
+    The API stays light by NOT importing ``rag.*`` — it just drops a job on the
+    queue; the worker (which carries the heavy RAG deps) does the ingestion.
+    """
+    job_id = enqueue_reindex(settings.target_repo)
     return JSONResponse(
-        {"status": "reindex_started", "repo": settings.target_repo}, status_code=202
+        {"status": "reindex_enqueued", "repo": settings.target_repo, "job_id": job_id},
+        status_code=202,
     )
-
-
-def _run_reindex(repo: str) -> None:
-    """Thin wrapper around Phase-1 ingestion; imported lazily (heavy deps)."""
-    try:
-        from rag.ingest import ingest_repo
-
-        logger.info("Reindex starting for %s", repo)
-        ingest_repo(repo)
-        logger.info("Reindex finished for %s", repo)
-    except Exception:  # noqa: BLE001 — background task must never escape unlogged.
-        logger.exception("Reindex failed for %s", repo)
 
 
 @app.get("/", response_class=HTMLResponse)

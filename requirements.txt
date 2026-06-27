@@ -1,60 +1,17 @@
 # ---------------------------------------------------------------------------
-# Phase 0 — service skeleton.
-# ---------------------------------------------------------------------------
-fastapi>=0.115
-uvicorn[standard]>=0.34
-pydantic>=2.10
-pydantic-settings>=2.7
-
-# ---------------------------------------------------------------------------
-# Phase 1 — RAG ingestion + retrieval (installed, version-pinned).
+# Superset for LOCAL DEV / FULL TEST RUNS — `pip install -r requirements.txt`
+# installs everything (api + worker + dev tooling), so the full test suite and
+# CI work with a single install.
 #
-# NOTE: sentence-transformers pulls in torch and is HEAVY (hundreds of MB). The
-# api/worker images still build with it, but only the ingestion CLI
-# (`python -m rag.ingest`) actually needs it at runtime. The FIRST run downloads
-# the embedding model (all-MiniLM-L6-v2, ~90 MB) and the cross-encoder reranker
-# (ms-marco-MiniLM-L-6-v2) into the HuggingFace cache (~/.cache/huggingface).
+# The Docker images install the per-service SUBSETS instead (faster, smaller):
+#   api/Dockerfile    -> requirements/api.txt    (light: no torch/langgraph)
+#   worker/Dockerfile -> requirements/worker.txt (full agent stack incl. torch)
+#
+# Pins live in requirements/{base,api,worker}.txt — edit there, not here.
 # ---------------------------------------------------------------------------
-qdrant-client==1.18.0
-sentence-transformers==5.6.0
-tiktoken==0.13.0
-PyGithub==2.9.1
-openai==2.44.0
+-r requirements/api.txt
+-r requirements/worker.txt
 
-# ---------------------------------------------------------------------------
-# Phase 2 — Event gateway: Redis queue + RQ worker + Jinja2 dashboard.
-# ---------------------------------------------------------------------------
-redis==8.0.1
-rq==2.10.0
-jinja2==3.1.6
-
-# ---------------------------------------------------------------------------
-# Phase 3 — Sandbox: Docker SDK to spawn locked-down sibling containers.
-# Requires a reachable Docker daemon at runtime (Docker-out-of-Docker via the
-# host socket); the sandbox tests are skipped when no daemon is available.
-# ---------------------------------------------------------------------------
-docker==7.1.0
-
-# ---------------------------------------------------------------------------
-# Phase 4 — Agent: LangGraph state machine. Reasoning uses Gemini via its
-# OpenAI-compatible endpoint, so the `openai` SDK (above) is the LLM client.
-# ---------------------------------------------------------------------------
-langgraph==1.2.6
-langchain-core==1.4.8
-
-# ---------------------------------------------------------------------------
-# Dev / test dependencies.
-# ---------------------------------------------------------------------------
+# Dev / test only (not needed in either image):
 pytest==9.1.1
-fakeredis==2.36.2                    # in-memory Redis for offline tests
-
-# ---------------------------------------------------------------------------
-# Roadmap below: intentionally NOT installed yet. Uncomment per phase.
-# ---------------------------------------------------------------------------
-
-# Phase 4 — Agent orchestration
-# langgraph>=0.2
-# langchain-core>=0.3
-
-# Phase 6 — Evaluation
-# pandas>=2.2                        # metric aggregation / reporting
+fakeredis==2.36.2          # in-memory Redis for offline tests

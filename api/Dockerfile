@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
-# API service image. Build context is the project root (see docker-compose.yml),
-# so COPY paths are relative to triage-agent/.
+# API gateway image. Build context is the project root (see docker-compose.yml).
+# Installs only the LIGHT api dependency set (no torch/langgraph) -> fast builds.
 FROM python:3.11-slim
 
 ENV PYTHONUNBUFFERED=1 \
@@ -8,14 +8,14 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /app
 
-# Install dependencies first for better layer caching.
-COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+# Dependencies first (before app code) so code changes don't reinstall deps.
+# The pip cache mount makes re-downloads instant across builds.
+COPY requirements/base.txt requirements/api.txt ./requirements/
+RUN --mount=type=cache,target=/root/.cache/pip pip install -r requirements/api.txt
 
-# Copy what the API needs: shared code, the api package (incl. templates), and
-# rag/ (the /reindex endpoint reuses the Phase-1 ingestion pipeline).
+# App code. The API never imports rag.* (/reindex enqueues to the worker), so no
+# rag/ is copied here — keeps the image small.
 COPY shared ./shared
-COPY rag ./rag
 COPY api ./api
 
 EXPOSE 8000

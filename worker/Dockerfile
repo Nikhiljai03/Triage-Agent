@@ -1,6 +1,7 @@
 # syntax=docker/dockerfile:1
-# Worker service image. Build context is the project root (see docker-compose.yml),
-# so COPY paths are relative to triage-agent/.
+# Worker image. Build context is the project root. Installs the FULL agent stack
+# (langgraph + torch via sentence-transformers, etc.) — this is the heavy build,
+# but only the worker pays for it now.
 FROM python:3.11-slim
 
 ENV PYTHONUNBUFFERED=1 \
@@ -8,12 +9,12 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /app
 
-# Install dependencies first for better layer caching.
-COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+# Dependencies first for layer caching; the pip cache mount avoids re-downloading
+# the large torch wheel on every rebuild.
+COPY requirements/base.txt requirements/worker.txt ./requirements/
+RUN --mount=type=cache,target=/root/.cache/pip pip install -r requirements/worker.txt
 
-# The worker runs the full agent: shared code, RAG, the sandbox runner, the
-# agent package (incl. prompt templates), and the worker itself.
+# App code: the worker runs the full agent (shared + RAG + sandbox + agent).
 COPY shared ./shared
 COPY rag ./rag
 COPY sandbox ./sandbox

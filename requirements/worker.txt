@@ -1,0 +1,17 @@
+# Worker: runs the full LangGraph agent — RAG, sandbox, and Gemini reasoning.
+# This is where the heavy torch wheel (via sentence-transformers) lives.
+-r base.txt
+
+# Agent orchestration + LLM (Gemini through its OpenAI-compatible endpoint)
+langgraph==1.2.6
+langchain-core==1.4.8
+openai==2.44.0
+
+# RAG: embeddings (pulls torch), vector store, tokenizer, GitHub ingestion
+sentence-transformers==5.6.0
+qdrant-client==1.18.0
+tiktoken==0.13.0
+PyGithub==2.9.1
+
+# Sandbox: Docker SDK to spawn locked-down sibling containers
+docker==7.1.0

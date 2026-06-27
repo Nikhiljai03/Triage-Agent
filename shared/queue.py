@@ -25,6 +25,9 @@ logger = logging.getLogger("triage.queue")
 
 QUEUE_NAME = "triage"
 JOB_FUNC = "worker.handler.handle_triage_job"
+REINDEX_FUNC = "worker.reindex.handle_reindex_job"
+# Ingestion can take minutes (fetch + embed); override RQ's short default.
+REINDEX_TIMEOUT = 3600
 
 # RQ needs a raw (bytes) connection — do NOT use decode_responses here.
 _redis_singleton: Redis | None = None
@@ -73,3 +76,14 @@ def enqueue_triage(event: IssueEvent) -> str:
     get_queue().enqueue(JOB_FUNC, event.model_dump(mode="json"), run_id, job_id=run_id)
     logger.info("Enqueued triage run %s for %s#%s", run_id, event.repo, event.issue_number)
     return run_id
+
+
+def enqueue_reindex(repo: str) -> str:
+    """Enqueue a RAG reindex job (runs in the worker, which carries the RAG deps).
+
+    Lets the API stay light: it never imports ``rag.*`` — it just drops a job on
+    the queue and the worker does the heavy fetch/embed/upsert.
+    """
+    job = get_queue().enqueue(REINDEX_FUNC, repo, job_timeout=REINDEX_TIMEOUT)
+    logger.info("Enqueued reindex for %s (job %s)", repo, job.id)
+    return str(job.id)

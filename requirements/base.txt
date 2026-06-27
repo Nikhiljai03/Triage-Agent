@@ -1,0 +1,7 @@
+# Shared by BOTH services — config, schemas, and the Redis/RQ queue plumbing.
+# (Listed once here so the per-service files don't duplicate them.)
+pydantic>=2.10
+pydantic-settings>=2.7
+python-dotenv          # .env parsing used by pydantic-settings / shared.config
+redis==8.0.1           # run store (api reads, worker writes) + RQ broker
+rq==2.10.0             # api enqueues, worker consumes

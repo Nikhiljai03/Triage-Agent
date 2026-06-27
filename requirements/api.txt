@@ -1,0 +1,8 @@
+# API gateway: receive webhooks, enqueue jobs, serve the dashboard, trigger
+# reindex (which ENQUEUES to the worker — see api.main /reindex). Deliberately
+# LIGHT: no torch / sentence-transformers / langgraph / qdrant. The API process
+# imports neither rag.* nor the github client, so those deps are excluded.
+-r base.txt
+fastapi>=0.115
+uvicorn[standard]>=0.34
+jinja2==3.1.6          # server-rendered dashboard
