@@ -1,11 +1,14 @@
-"""Triage job handler (Phase 2 stub).
+"""Triage job handler — runs the LangGraph agent for one queued issue.
 
-This is the function RQ invokes for each queued job. For now it just records a
-placeholder decision and a few reasoning steps to the run store, proving the
-event pipeline end to end. The real agent replaces the stub in Phase 4.
+RQ invokes this for each job. It deserializes the :class:`IssueEvent`, marks the
+run ``running``, and executes the triage graph. The graph's nodes stream their
+reasoning steps into the run store *as they go* (via the default deps' store), so
+the dashboard updates live. On completion we record the final decision and a
+summary of the agent's *intended* actions — which, per the Phase-4 safety
+contract, are proposals only: nothing is written to GitHub.
 
-It must NEVER raise out of the worker process: any failure is caught and
-recorded on the run as an ``error`` step + status.
+It must NEVER raise out of the worker process: any failure is caught and recorded
+on the run as an ``error`` step + status.
 """
 
 from __future__ import annotations
@@ -19,29 +22,30 @@ logger = logging.getLogger("triage.worker.handler")
 
 
 def handle_triage_job(event_dict: dict, run_id: str) -> None:
-    """Process one triage job: mark running, record stub steps, mark done.
-
-    Args:
-        event_dict: a JSON-serialized :class:`IssueEvent`.
-        run_id: the run to update (also the RQ job id).
-    """
+    """Process one triage job end to end and persist the outcome."""
     store = get_run_store()
     try:
         event = IssueEvent.model_validate(event_dict)
         store.update(run_id, status="running")
+
+        # Imported here so the worker process starts cheaply and only pays the
+        # agent's import cost (langgraph, rag, sandbox) when a job actually runs.
+        from agent.graph import run_triage
+
+        final = run_triage(event, run_id)
+
+        actions = final.get("intended_actions") or []
+        decision = final.get("final_decision") or "no decision reached"
+        summary = ", ".join(
+            f"{a.type}({a.payload.get('label', a.payload.get('title', ''))})" for a in actions
+        )
         store.append_step(
             run_id,
-            "received",
-            f"issue #{event.issue_number} '{event.title}' (action={event.action})",
+            "summary",
+            f"{len(actions)} intended action(s) [dry-run, not executed]: {summary}",
         )
-        store.append_step(run_id, "classify", "(agent not implemented yet)")
-
-        # TODO(Phase 4): replace this stub with the LangGraph triage agent
-        # (RAG duplicate check -> sandbox repro -> severity -> draft fix).
-        decision = "stub: pipeline reached worker; agent arrives in Phase 4"
-        store.append_step(run_id, "decide", decision)
         store.update(run_id, status="done", decision=decision)
-        logger.info("Triage run %s done (stub) for issue #%s", run_id, event.issue_number)
+        logger.info("Triage run %s done for issue #%s: %s", run_id, event.issue_number, decision)
     except Exception as exc:  # noqa: BLE001 — never crash the worker; record and move on.
         logger.exception("Triage run %s failed", run_id)
         try:

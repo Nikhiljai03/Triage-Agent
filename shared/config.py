@@ -35,8 +35,13 @@ class Settings(BaseSettings):
     github_webhook_secret: str = ""  # shared secret to verify webhook signatures
 
     # ----- LLM -------------------------------------------------------------
-    openai_api_key: str = ""  # API key for the LLM provider
-    llm_model: str = "gpt-4o-mini"  # default chat/completion model
+    # The agent reasons via Gemini through its OpenAI-compatible endpoint (so the
+    # plain `openai` SDK works). Swapping providers is a config change — point
+    # base_url/model/key elsewhere and agent/llm.py needs no edits.
+    llm_model: str = "gemini-2.0-flash"  # fast/cheap Gemini model (configurable)
+    gemini_api_key: str = ""  # GEMINI_API_KEY — never hardcode
+    gemini_base_url: str = "https://generativelanguage.googleapis.com/v1beta/openai/"
+    openai_api_key: str = ""  # used only by the OpenAI embedding backend (Phase 1)
 
     # ----- RAG / embeddings ------------------------------------------------
     embedding_backend: str = "sentence-transformers"  # "sentence-transformers" | "openai"
@@ -61,6 +66,11 @@ class Settings(BaseSettings):
     # Webhook signature verification fails CLOSED: with no secret set, requests are
     # rejected unless this dev-only flag is explicitly enabled.
     webhook_allow_unsigned: bool = False
+
+    # ----- Agent -----------------------------------------------------------
+    # Severities (comma-separated) the agent is allowed to attempt an auto-fix for.
+    # Conservative default: only "low". Anything else escalates to a human.
+    autofix_severities: str = "low"
 
     # ----- Sandbox ---------------------------------------------------------
     sandbox_image: str = "python:3.11-slim"  # base image for the repro sandbox

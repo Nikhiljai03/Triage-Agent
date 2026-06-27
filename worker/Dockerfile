@@ -12,8 +12,12 @@ WORKDIR /app
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy only what the worker needs: shared config + the worker package.
+# The worker runs the full agent: shared code, RAG, the sandbox runner, the
+# agent package (incl. prompt templates), and the worker itself.
 COPY shared ./shared
+COPY rag ./rag
+COPY sandbox ./sandbox
+COPY agent ./agent
 COPY worker ./worker
 
 CMD ["python", "-m", "worker.main"]
