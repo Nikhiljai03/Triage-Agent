@@ -38,7 +38,7 @@ class Settings(BaseSettings):
     # The agent reasons via Gemini through its OpenAI-compatible endpoint (so the
     # plain `openai` SDK works). Swapping providers is a config change — point
     # base_url/model/key elsewhere and agent/llm.py needs no edits.
-    llm_model: str = "gemini-2.0-flash"  # fast/cheap Gemini model (configurable)
+    llm_model: str = "gemini-2.5-flash"  # fast/cheap Gemini model (configurable)
     gemini_api_key: str = ""  # GEMINI_API_KEY — never hardcode
     gemini_base_url: str = "https://generativelanguage.googleapis.com/v1beta/openai/"
     openai_api_key: str = ""  # used only by the OpenAI embedding backend (Phase 1)
