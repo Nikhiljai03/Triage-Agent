@@ -60,8 +60,14 @@ class Settings(BaseSettings):
     redis_url: str = "redis://redis:6379/0"  # broker/queue for background jobs
 
     # ----- Safety ----------------------------------------------------------
+    # GitHub writes happen ONLY when BOTH gates are flipped (double opt-in):
+    #   dry_run == False  AND  enable_live_writes == True.
+    # Defaults below make it impossible to write to a real repo by accident.
     dry_run: bool = True  # if True, never perform live writes
     enable_live_writes: bool = False  # explicit master switch for any GitHub write
+    # The ONLY repo writes may target. Empty -> use target_repo. Set this to pin
+    # live writes to a specific (e.g. throwaway) repo regardless of the event's repo.
+    live_write_repo: str = ""
     confidence_threshold: float = 0.7  # min model confidence before auto-acting
     # Webhook signature verification fails CLOSED: with no secret set, requests are
     # rejected unless this dev-only flag is explicitly enabled.

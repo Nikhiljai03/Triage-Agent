@@ -30,22 +30,45 @@ def handle_triage_job(event_dict: dict, run_id: str) -> None:
 
         # Imported here so the worker process starts cheaply and only pays the
         # agent's import cost (langgraph, rag, sandbox) when a job actually runs.
+        from agent.executor import execute_intended_actions
         from agent.graph import run_triage
 
         final = run_triage(event, run_id)
 
-        actions = final.get("intended_actions") or []
+        # Phase 5: push intended actions through the guardrail gate — the ONLY
+        # path that may write to GitHub. In dry-run (default) every action is
+        # recorded as skipped; nothing is written.
+        results = execute_intended_actions(final, store=store)
+
         decision = final.get("final_decision") or "no decision reached"
-        summary = ", ".join(
-            f"{a.type}({a.payload.get('label', a.payload.get('title', ''))})" for a in actions
+        executed = sum(r.status == "executed" for r in results)
+        skipped = sum(r.status == "skipped" for r in results)
+        errored = sum(r.status == "error" for r in results)
+        detail = ", ".join(
+            (
+                f"{r.action_type}->{r.url}"
+                if r.status == "executed" and r.url
+                else f"{r.action_type} ({r.status})"
+            )
+            for r in results
         )
         store.append_step(
             run_id,
             "summary",
-            f"{len(actions)} intended action(s) [dry-run, not executed]: {summary}",
+            f"actions: {executed} executed, {skipped} skipped, {errored} error"
+            + (f" — {detail}" if detail else ""),
         )
-        store.update(run_id, status="done", decision=decision)
-        logger.info("Triage run %s done for issue #%s: %s", run_id, event.issue_number, decision)
+        # A write error never loses the triage result: the run is still 'done'.
+        store.update(run_id, status="done", decision=decision, executions=results)
+        logger.info(
+            "Triage run %s done for issue #%s: %s (%d executed, %d skipped, %d error)",
+            run_id,
+            event.issue_number,
+            decision,
+            executed,
+            skipped,
+            errored,
+        )
     except Exception as exc:  # noqa: BLE001 — never crash the worker; record and move on.
         logger.exception("Triage run %s failed", run_id)
         try:

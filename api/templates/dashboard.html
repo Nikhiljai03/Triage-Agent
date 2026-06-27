@@ -46,6 +46,9 @@
     .badge.running { background: var(--running); }
     .badge.done { background: var(--done); }
     .badge.error { background: var(--error); }
+    .badge.executed { background: var(--done); }
+    .badge.skipped { background: #3a4150; }
+    a { color: var(--accent); }
     .muted { color: var(--muted); }
     .decision { max-width: 360px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     h2 { font-size: 14px; margin: 0 0 12px; }
@@ -96,6 +99,9 @@
 
     <section class="detail">
       <h2 id="detail-title">Select a run to see its reasoning trace</h2>
+      <h2 id="actions-title" style="display:none">Actions</h2>
+      <ul class="timeline" id="actions"></ul>
+      <h2 id="trace-title" style="display:none">Reasoning trace</h2>
       <ul class="timeline" id="timeline"></ul>
     </section>
   </main>
@@ -133,6 +139,17 @@
       const run = await (await fetch(`/status/${runId}`)).json();
       document.getElementById("detail-title").innerHTML =
         `Issue #${run.issue_number} · <span class="badge ${run.status}">${run.status}</span>`;
+
+      // Actions — what the guardrail executed / skipped (dry-run) / errored.
+      const execs = run.executions || [];
+      document.getElementById("actions-title").style.display = execs.length ? "" : "none";
+      document.getElementById("actions").innerHTML = execs.map(e => `
+        <li><span class="badge ${e.status}">${e.status}</span>
+        <span class="name">${esc(e.action_type)}</span>
+        ${e.url ? `<a href="${esc(e.url)}" target="_blank" rel="noopener">open ↗</a>` : ""}
+        <div class="detail">${esc(e.detail)}</div></li>`).join("");
+
+      document.getElementById("trace-title").style.display = "";
       const steps = (run.steps || []).map(s => `
         <li><span class="name">${esc(s.name)}</span><span class="ts">${fmt(s.ts)}</span>
         <div class="detail">${esc(s.detail)}</div></li>`).join("");

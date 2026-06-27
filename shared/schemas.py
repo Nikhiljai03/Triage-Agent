@@ -29,8 +29,13 @@ RunStatus = Literal["queued", "running", "done", "error"]
 # Bug severity buckets the agent classifies into.
 Severity = Literal["critical", "high", "medium", "low"]
 
-# The kinds of action the agent may PROPOSE (never execute — see Phase 5).
+# The kinds of action the agent may PROPOSE. Phase 5 executes these behind the
+# double dry-run gate; the same three (label/comment/draft_pr) are the ONLY types
+# ever allowed to write — all non-destructive (no close/merge/delete).
 ActionType = Literal["label", "comment", "draft_pr"]
+
+# Outcome of running one intended action through the Phase-5 guardrail gate.
+ExecutionStatus = Literal["executed", "skipped", "error"]
 
 
 class GitHubWebhookPayload(BaseModel):
@@ -71,6 +76,33 @@ class TriageStep(BaseModel):
     ts: datetime = Field(default_factory=_utcnow)
 
 
+class IntendedAction(BaseModel):
+    """An action the agent decided to take.
+
+    The agent only *records* these (it never writes). Phase 5's guarded executor
+    is the sole path that may turn one into a real GitHub write — a label, a
+    comment, or a draft PR — and only behind ``dry_run`` / ``enable_live_writes``.
+    """
+
+    type: ActionType
+    payload: dict[str, Any] = Field(default_factory=dict)
+    reason: str = ""
+
+
+class ExecutionResult(BaseModel):
+    """The result of pushing one :class:`IntendedAction` through the guardrail gate.
+
+    ``status`` is ``executed`` (a real GitHub write happened — ``url`` points at it),
+    ``skipped`` (gate/allowlist/repo-guard/idempotency declined — the default in
+    dry-run), or ``error`` (the write raised; the worker still survives).
+    """
+
+    action_type: str
+    status: ExecutionStatus
+    detail: str = ""
+    url: str | None = None
+
+
 class TriageRun(BaseModel):
     """A single triage attempt and its evolving state/trace."""
 
@@ -80,18 +112,6 @@ class TriageRun(BaseModel):
     status: RunStatus = "queued"
     steps: list[TriageStep] = Field(default_factory=list)
     decision: str | None = None  # nullable summary, set when the run resolves
+    executions: list[ExecutionResult] = Field(default_factory=list)  # Phase-5 write outcomes
     created_at: datetime = Field(default_factory=_utcnow)
     updated_at: datetime = Field(default_factory=_utcnow)
-
-
-class IntendedAction(BaseModel):
-    """An action the agent decided to take but does NOT execute in Phase 4.
-
-    Recorded so the dashboard (and Phase 5's guarded executor) can see exactly
-    what the agent *would* do — a label, a comment, or a draft PR. Phase 5 gates
-    actual GitHub writes behind ``dry_run`` / ``enable_live_writes``.
-    """
-
-    type: ActionType
-    payload: dict[str, Any] = Field(default_factory=dict)
-    reason: str = ""

@@ -134,7 +134,9 @@ def duplicate_check(state: TriageState, deps: AgentDeps) -> TriageState:
         propose_label(state, "duplicate", f"matches #{dup}", store=deps.store)
         propose_comment(
             state,
-            f"This appears to be a duplicate of #{dup}. Closing in favor of that issue.",
+            # NOTE: the agent never closes issues (Phase-5 guardrails forbid it);
+            # this only points to the original — a human decides whether to close.
+            f"This appears to be a duplicate of #{dup}. See that issue for the original report.",
             f"link to #{dup}",
             store=deps.store,
         )
